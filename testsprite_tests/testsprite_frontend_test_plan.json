@@ -1,0 +1,401 @@
+[
+  {
+    "id": "TC001",
+    "title": "Landing page renders correctly on desktop",
+    "description": "Verify that the main landing page renders all sections (hero, features, testimonials, pricing, call to action, footer) correctly on a standard desktop screen resolution.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open the application landing page in a desktop browser."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that hero section is visible with correct title and image."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify features section displays all listed features accurately."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify testimonials section renders user testimonials correctly."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm pricing section shows all pricing tiers with correct details."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure call to action section is visible with clickable buttons/links."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that footer is correctly displayed with expected contents."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Landing page responsive layout on mobile devices",
+    "description": "Ensure the landing page and all its sections render responsively and maintain usability on multiple mobile screen sizes.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open the landing page on devices/emulators with screen widths of 320px, 375px, and 414px."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that all landing page sections are visible and fit vertically without horizontal scrolling."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text remains readable and UI elements are correctly sized and spaced."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that call to action buttons remain tappable and visible."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Navigation bar glass morphism and scroll styling",
+    "description": "Verify that the navigation bar applies glass morphism style by default and updates styling correctly on scroll.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load any page with the navigation bar."
+      },
+      {
+        "type": "assertion",
+        "description": "Check navigation bar displays glass morphism styling (blurred background, partial transparency) when page is at top."
+      },
+      {
+        "type": "action",
+        "description": "Scroll the page down beyond a threshold."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the navigation bar updates style (background opacity, shadow, or color changes) as per scroll-based effect."
+      },
+      {
+        "type": "action",
+        "description": "Scroll back to top."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify navigation bar returns to original glass morphism style."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "3D floating elements load and animate without blocking UI",
+    "description": "Ensure interactive 3D floating elements render on client side correctly, animate smoothly, and do not delay or block main UI loading.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to a page displaying 3D floating elements."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify 3D components render only on client side (no SSR rendering errors)."
+      },
+      {
+        "type": "assertion",
+        "description": "Check floating animations start automatically and run smoothly without jank."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that 3D elements do not block or delay load of other page content."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "AI-powered app builder chat input and response",
+    "description": "Validate that the AI-powered app builder chat accepts user messages, processes them, and displays relevant AI-generated responses without errors.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the app builder chat interface."
+      },
+      {
+        "type": "action",
+        "description": "Enter a valid chat message and submit."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure the chat input is accepted and the message appears in the chat history."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the AI assistant generates a relevant, coherent response within an acceptable time frame."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "AI-powered app builder file upload functionality",
+    "description": "Check that users can upload files of supported formats in the app builder interface and that files are correctly received and processed.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the app builder file upload section."
+      },
+      {
+        "type": "action",
+        "description": "Upload a supported file type (e.g., .txt, .json) within size limits."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the file upload is accepted and a success notification or indicator is shown."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to upload a disallowed file type or file exceeding size limits."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that appropriate error message or validation message is shown preventing upload."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "UI component library button interactions and accessibility",
+    "description": "Verify that button components from the UI library are clickable, trigger actions, and comply with accessibility standards (ARIA roles, keyboard navigation).",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Render UI library buttons in different states (default, disabled, loading)."
+      },
+      {
+        "type": "assertion",
+        "description": "Check buttons are clickable when enabled and trigger expected actions."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure disabled buttons are non-interactive."
+      },
+      {
+        "type": "action",
+        "description": "Navigate and operate the button components via keyboard (Tab, Enter, Space)."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm buttons have correct ARIA roles and labels for screen readers."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "State management consistency with Zustand and React Query",
+    "description": "Validate that UI states managed through Zustand and server data synchronized via React Query remain consistent and update correctly in response to user interactions and server changes.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger UI state changes such as toggling dialogs, modals, or other interactive components."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI updates immediately reflecting the state changes."
+      },
+      {
+        "type": "action",
+        "description": "Simulate server data updates via React Query (mock or live)."
+      },
+      {
+        "type": "assertion",
+        "description": "Check UI elements depending on server data update without delay or inconsistency."
+      },
+      {
+        "type": "action",
+        "description": "Perform rapid state changes and confirm no race conditions or UI glitches."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Toast notifications appear contextually and dismiss properly",
+    "description": "Ensure toast notifications triggered by user actions and system events appear at correct locations with appropriate messages and can be dismissed manually or auto-dismissed after timeout.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Perform an action that triggers a toast notification (e.g., successful file upload)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify toast appears with correct message and styling."
+      },
+      {
+        "type": "action",
+        "description": "Wait for auto-dismiss timeout and confirm toast disappears."
+      },
+      {
+        "type": "action",
+        "description": "Trigger another toast and manually dismiss it via close button."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm toast is removed immediately on manual dismissal."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Global styling and animations render without glitches",
+    "description": "Check that global styles, including Tailwind CSS configurations and custom animations, apply consistently across all pages and components without visual glitches or rendering issues.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate through main landing page, app builder, and UI library components."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify consistent font styles, colors, spacing, and layout as per design."
+      },
+      {
+        "type": "assertion",
+        "description": "Observe animations on buttons, page transitions, and floating elements for smoothness and absence of flickering."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Routing works correctly including error and not-found pages",
+    "description": "Test application routing handling for all defined routes, including correct rendering of layouts, metadata, and handling of 404 or other error states.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to all main routes including landing page and app builder."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify appropriate layouts and metadata are applied on each route."
+      },
+      {
+        "type": "action",
+        "description": "Visit invalid or undefined URLs."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the custom not-found page renders correctly without crashes."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Utility functions provide correct outputs and handle edge cases",
+    "description": "Test utility functions such as class merging to ensure they return expected results under normal and edge cases.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Call utility functions with valid input parameters."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify functions return correctly merged class names or expected output."
+      },
+      {
+        "type": "action",
+        "description": "Provide empty, null, or invalid inputs."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm functions handle such inputs gracefully without exceptions."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "TypeScript type definitions enforce compile-time checks",
+    "description": "Ensure all TypeScript types are correctly defined and enforce expected interfaces, catching invalid usage during compile-time in components and utility functions.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to pass invalid props or incorrect types to UI components."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify TypeScript compiler raises type errors preventing incorrect usage."
+      },
+      {
+        "type": "action",
+        "description": "Write sample code snippets using utility functions with wrong types."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm compile-time errors are generated as expected."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Custom hook use-toast triggers toasts and updates UI",
+    "description": "Validate that the custom React hook for toast notifications functions correctly, triggering toasts and updating the UI state as required.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Use the use-toast hook in a test component to dispatch a toast notification."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the toast notification appears with correct message and disappears as per settings."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Custom hook use-mobile detects mobile devices accurately",
+    "description": "Test the custom hook use-mobile returns accurate detection of mobile devices and updates correctly on window resize.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Run the hook in different simulated device environments (mobile and desktop)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the hook returns true on mobile device simulations and false on desktop."
+      },
+      {
+        "type": "action",
+        "description": "Resize the browser window to mobile and desktop widths."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the hook state updates correspondingly."
+      }
+    ]
+  }
+]

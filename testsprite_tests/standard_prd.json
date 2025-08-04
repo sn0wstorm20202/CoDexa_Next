@@ -1,0 +1,218 @@
+{
+  "meta": {
+    "project": "Next.js AI-Powered App Builder",
+    "date": "2025-07-30",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "A cutting-edge web application built with Next.js and React, featuring an AI-powered app builder interface, interactive 3D elements, and a modern landing page with rich UI components and responsive design.",
+  "core_goals": [
+    "Provide an intuitive AI-powered app builder interface with chat and file upload capabilities.",
+    "Deliver a rich, responsive landing page showcasing product features, pricing, testimonials, and compelling CTAs.",
+    "Integrate interactive 3D floating elements for enhanced user engagement.",
+    "Implement a comprehensive UI component library for consistent and reusable design.",
+    "Ensure a seamless user experience with responsive navigation, animations, and state management.",
+    "Facilitate robust and scalable app architecture using modern tech stack and best practices."
+  ],
+  "key_features": [
+    "Main Landing Page with hero, features, testimonials, pricing, call to action, and footer sections.",
+    "Responsive Navigation Bar featuring glass morphism and scroll-based styling effects.",
+    "Interactive 3D Floating Elements built using Three.js and React Three Fiber for immersive UI.",
+    "AI-powered App Builder interface including chat functionality and file upload for user input.",
+    "Comprehensive UI Component Library built using Radix UI and Tailwind CSS covering buttons, cards, dialogs, forms, and many other components.",
+    "State management handled via Zustand for UI states and React Query for server-side state synchronization.",
+    "Custom React hooks for toast notifications and mobile device detection to enhance user experience.",
+    "Global styling with Tailwind CSS and custom animations ensuring consistent and modern look and feel.",
+    "Next.js app router setup with layouts and metadata for effective routing and SEO.",
+    "Utility functions and TypeScript type definitions supporting maintainability and developer productivity."
+  ],
+  "user_flow_summary": [
+    "Users land on the main landing page and navigate through features, testimonials, pricing, and call to action sections.",
+    "Users interact with the responsive navigation menu to access different parts of the site seamlessly.",
+    "Users engage with 3D floating elements that respond dynamically with floating animations for visual appeal.",
+    "Users access the AI-powered app builder where they can chat with the AI assistant and upload files to build apps efficiently.",
+    "Users interact with various UI components provided by the UI library during the app building and site navigation.",
+    "State management ensures UI elements respond accurately to user actions and server data updates.",
+    "Notifications and toasts provide user feedback during interactions.",
+    "Users experience smooth transitions and animations enhancing overall usability and engagement."
+  ],
+  "validation_criteria": [
+    "Landing page renders correctly on different screen sizes and matches design specifications.",
+    "Navigation bar responds to scroll events and updates styling appropriately.",
+    "3D floating elements load correctly on the client side without blocking main UI rendering.",
+    "AI-powered app builder processes chat and file upload inputs without errors and returns relevant output.",
+    "All UI components function as intended with correct interactions and accessibility compliance.",
+    "State management works seamlessly with no UI inconsistencies or data synchronization issues.",
+    "Toasts and notifications appear contextually based on user actions.",
+    "Global styles and animations function without visual glitches.",
+    "Routing works correctly handling all defined routes including error states.",
+    "TypeScript types and utility functions provide compile-time checks ensuring code quality."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "Next.js 15.4.5",
+      "React 19.1.0",
+      "Tailwind CSS 3.3.0",
+      "Radix UI Components",
+      "Framer Motion",
+      "Three.js",
+      "@react-three/fiber",
+      "@react-three/drei",
+      "React Hook Form",
+      "Zod Validation",
+      "Zustand State Management",
+      "@tanstack/react-query",
+      "Lucide React Icons",
+      "Recharts",
+      "Sonner Toast"
+    ],
+    "features": [
+      {
+        "name": "Landing Page",
+        "description": "Main landing page with hero section, features, testimonials, pricing, and CTA",
+        "files": [
+          "src/app/page.tsx",
+          "src/components/Hero.tsx",
+          "src/components/Features.tsx",
+          "src/components/Testimonials.tsx",
+          "src/components/Pricing.tsx",
+          "src/components/CTA.tsx",
+          "src/components/Footer.tsx"
+        ]
+      },
+      {
+        "name": "Navigation",
+        "description": "Responsive navigation bar with glass morphism effect and scroll-based styling",
+        "files": [
+          "src/components/Navigation.tsx"
+        ]
+      },
+      {
+        "name": "3D Floating Elements",
+        "description": "Interactive 3D elements using Three.js with floating animations and client-side rendering",
+        "files": [
+          "src/components/FloatingElements.tsx",
+          "src/components/ClientOnlyFloatingElements.tsx"
+        ]
+      },
+      {
+        "name": "App Builder",
+        "description": "AI-powered app builder interface with chat functionality and file upload",
+        "files": [
+          "src/app/builder/page.tsx"
+        ]
+      },
+      {
+        "name": "UI Component Library",
+        "description": "Complete set of reusable UI components built with Radix UI and Tailwind CSS",
+        "files": [
+          "src/components/ui/button.tsx",
+          "src/components/ui/card.tsx",
+          "src/components/ui/dialog.tsx",
+          "src/components/ui/form.tsx",
+          "src/components/ui/input.tsx",
+          "src/components/ui/toast.tsx",
+          "src/components/ui/toaster.tsx",
+          "src/components/ui/tooltip.tsx",
+          "src/components/ui/alert.tsx",
+          "src/components/ui/calendar.tsx",
+          "src/components/ui/sidebar.tsx",
+          "src/components/ui/accordion.tsx",
+          "src/components/ui/alert-dialog.tsx",
+          "src/components/ui/aspect-ratio.tsx",
+          "src/components/ui/avatar.tsx",
+          "src/components/ui/badge.tsx",
+          "src/components/ui/breadcrumb.tsx",
+          "src/components/ui/carousel.tsx",
+          "src/components/ui/chart.tsx",
+          "src/components/ui/checkbox.tsx",
+          "src/components/ui/collapsible.tsx",
+          "src/components/ui/command.tsx",
+          "src/components/ui/context-menu.tsx",
+          "src/components/ui/drawer.tsx",
+          "src/components/ui/dropdown-menu.tsx",
+          "src/components/ui/hover-card.tsx",
+          "src/components/ui/input-otp.tsx",
+          "src/components/ui/label.tsx",
+          "src/components/ui/menubar.tsx",
+          "src/components/ui/navigation-menu.tsx",
+          "src/components/ui/pagination.tsx",
+          "src/components/ui/popover.tsx",
+          "src/components/ui/progress.tsx",
+          "src/components/ui/radio-group.tsx",
+          "src/components/ui/resizable.tsx",
+          "src/components/ui/scroll-area.tsx",
+          "src/components/ui/select.tsx",
+          "src/components/ui/separator.tsx",
+          "src/components/ui/sheet.tsx",
+          "src/components/ui/skeleton.tsx",
+          "src/components/ui/slider.tsx",
+          "src/components/ui/sonner.tsx",
+          "src/components/ui/switch.tsx",
+          "src/components/ui/table.tsx",
+          "src/components/ui/tabs.tsx",
+          "src/components/ui/textarea.tsx",
+          "src/components/ui/toggle.tsx",
+          "src/components/ui/toggle-group.tsx",
+          "src/components/ui/use-toast.ts"
+        ]
+      },
+      {
+        "name": "State Management",
+        "description": "Zustand-based state management for UI state and React Query for server state",
+        "files": [
+          "src/store/uiStore.ts",
+          "src/components/ReactQueryProvider.tsx"
+        ]
+      },
+      {
+        "name": "Custom Hooks",
+        "description": "Custom React hooks for toast notifications and mobile detection",
+        "files": [
+          "src/hooks/use-toast.ts",
+          "src/hooks/use-mobile.tsx"
+        ]
+      },
+      {
+        "name": "Styling and Animations",
+        "description": "Global CSS with custom animations, glass morphism effects, and responsive design",
+        "files": [
+          "src/app/globals.css",
+          "src/index.css",
+          "src/App.css",
+          "tailwind.config.js",
+          "postcss.config.mjs"
+        ]
+      },
+      {
+        "name": "Layout and Routing",
+        "description": "Next.js app router layout with providers and metadata",
+        "files": [
+          "src/app/layout.tsx",
+          "src/app/not-found.tsx"
+        ]
+      },
+      {
+        "name": "Test Page",
+        "description": "Simple test page for development and testing purposes",
+        "files": [
+          "src/app/test/page.tsx"
+        ]
+      },
+      {
+        "name": "Utility Functions",
+        "description": "Utility functions for class merging and other helper functions",
+        "files": [
+          "src/lib/utils.ts"
+        ]
+      },
+      {
+        "name": "Type Definitions",
+        "description": "TypeScript type definitions and interfaces",
+        "files": [
+          "src/types/"
+        ]
+      }
+    ]
+  }
+}

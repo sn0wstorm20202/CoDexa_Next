@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3001",
+  "loginUser": "Prayas",
+  "loginPassword": "animani9733",
+  "executionArgs": {
+    "projectName": "codexa",
+    "projectPath": "E:\\CODING\\CoDexa-2.0-1",
+    "testIds": [],
+    "additionalInstruction": "The server is now running on port 3001 and the React runtime error has been fixed. Test all functionality including landing page, navigation, floating elements, app builder, and UI components thoroughly.",
+    "envs": {
+      "API_KEY": "sk-user-EU8yX1V-L_6eyZzljtszGpq63KCJP4NdSIRKawsv6j7-L63Q86awGtKtzCXqvBAEZ1X_XMBZjQ9OlH21H1CNM-mgYkIHBGUMpmmCT5z38K7ZS6GyCWrwyHDkfdKLnbTmoXI"
+    }
+  },
+  "proxy": "http://4f3cacab-70b7-473e-9339-ece29e4d6c77:VNDx5z1AFQyJb254Q3bf7p50pig6WxGy@tun.testsprite.com:8080"
+}
