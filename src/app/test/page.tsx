@@ -1,7 +1,14 @@
-export default function TestPage() {
+
+
+const getUsers = async () => {
+    
     return (
         <div>
-            <h1>Testpage</h1>
+            <pre>Hello World</pre>
         </div>
     );
-} 
+}
+
+
+
+export default getUsers;
