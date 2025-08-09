@@ -4,12 +4,23 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Paperclip, Mic, Image, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import { useTRPC } from "@/trpc/client";
+import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
 
 
 export default function BuilderPage() {
     const [input, setInput] = useState("");
+    const trpc = useTRPC();
 
+    const invoke = useMutation(trpc.invoke.mutationOptions({
+        onSuccess: () => {
+            toast.success("AI is working on it");
+        },
+        onError: () => {
+            toast.error("Something went wrong!");
+        },
+    }));
 
     const suggestions = [
         "Create a financial app",
@@ -54,7 +65,6 @@ export default function BuilderPage() {
                 transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
                 className="w-full max-w-4xl mx-auto text-center"
             >
-                {/* Header */}
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -73,7 +83,6 @@ export default function BuilderPage() {
                     Create stunning apps & websites by chatting with AI.
                 </motion.p>
 
-                {/* Chat Input */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -88,7 +97,6 @@ export default function BuilderPage() {
                             className="w-full h-32 bg-transparent border-none outline-none resize-none text-lg placeholder:text-muted-foreground pr-16"
                         />
 
-                        {/* Hidden Inputs */}
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -104,7 +112,6 @@ export default function BuilderPage() {
                             onChange={handleImageChange}
                         />
 
-                        {/* Input Actions */}
                         <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Button
@@ -131,16 +138,16 @@ export default function BuilderPage() {
                                     className="p-2 h-auto"
                                     onClick={() => imageInputRef.current?.click()}
                                 >
-                                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                                     <Image size={18} />
                                 </Button>
                             </div>
 
                             <Button
+                                onClick={() => invoke.mutate({ text: input })}
                                 variant="default"
                                 size="sm"
                                 className="rounded-full p-2 h-auto"
-                                disabled={!input.trim()}
+                                disabled={invoke.isPending || !input.trim()}
                             >
                                 <ArrowUp size={18} />
                             </Button>
@@ -148,7 +155,6 @@ export default function BuilderPage() {
                     </div>
                 </motion.div>
 
-                {/* Import Options */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -175,7 +181,6 @@ export default function BuilderPage() {
                     </div>
                 </motion.div>
 
-                {/* Suggestions */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -198,4 +203,4 @@ export default function BuilderPage() {
             </motion.div>
         </div>
     );
-} 
+}
