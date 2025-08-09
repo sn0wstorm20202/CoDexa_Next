@@ -15,7 +15,7 @@ export const appRouter = createTRPCRouter({
                 },
             });
             return {
-                message: "Hello, world!",
+                message: "Hello, world",
             };
         }),
     createAI: baseProcedure
