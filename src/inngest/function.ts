@@ -6,6 +6,9 @@ import {
   createNetwork,
   gemini
 } from "@inngest/agent-kit";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 import { PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
@@ -34,7 +37,8 @@ export const codeAgentFunction = inngest.createFunction(
         "An expert coding agent that can write code, run terminal commands, and summarize content.",
       system: PROMPT,
       model: gemini({
-        model: "gemini-1.5-flash",
+        apiKey: process.env.GEMINI_API_KEY,
+        model: "gemini-2.5-flash"
         
       }),
            // ✅ Fixed type name
