@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
 
 
 export default function BuilderPage() {
-    const [input, setInput] = useState("");
+    const [value, setInput] = useState("");
     const trpc = useTRPC();
-
-    const invoke = useMutation(trpc.invoke.mutationOptions({
+    const {data: messages} = useQuery(trpc.messages.getMany.queryOptions());
+    const createMessage = useMutation(trpc.messages.create.mutationOptions({
         onSuccess: () => {
             toast.success("AI is working on it");
         },
@@ -91,7 +93,7 @@ export default function BuilderPage() {
                 >
                     <div className="relative">
                         <textarea
-                            value={input}
+                            value={value}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type your idea and we'll bring it to life (or /command)"
                             className="w-full h-32 bg-transparent border-none outline-none resize-none text-lg placeholder:text-muted-foreground pr-16"
@@ -143,12 +145,14 @@ export default function BuilderPage() {
                             </div>
 
                             <Button
-                                onClick={() => invoke.mutate({ text: input })}
                                 variant="default"
                                 size="sm"
                                 className="rounded-full p-2 h-auto"
-                                disabled={invoke.isPending || !input.trim()}
+                                disabled={createMessage.isPending || !value.trim()}
+                                onClick={() => createMessage.mutate({ value: value })}
+                                
                             >
+                                
                                 <ArrowUp size={18} />
                             </Button>
                         </div>
