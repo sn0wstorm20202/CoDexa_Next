@@ -1,6 +1,11 @@
-import { z } from "zod";
+import { z, type ZodType } from "zod";
 import { Sandbox } from "@e2b/code-interpreter";
-import { openai, createAgent, createTool, createNetwork, type Tool } from "@inngest/agent-kit";
+import {
+  createAgent,
+  createTool,
+  createNetwork,
+  gemini
+} from "@inngest/agent-kit";
 
 import { PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
@@ -25,21 +30,21 @@ export const codeAgentFunction = inngest.createFunction(
 
     const codeAgent = createAgent<AgentState>({
       name: "code-agent",
-      description: "An expert coding agent that can write code, run terminal commands, and summarize content.",
+      description:
+        "An expert coding agent that can write code, run terminal commands, and summarize content.",
       system: PROMPT,
-      model: openai({
-        model: "gpt-4.1",
-        defaultParameters: {
-          temperature: 0.1,
-        },
+      model: gemini({
+        model: "gemini-1.5-flash",
+        
       }),
+           // ✅ Fixed type name
       tools: [
         createTool({
           name: "terminal",
           description: "Use this tool to run terminal commands in the sandbox",
           parameters: z.object({
             command: z.string(),
-          }),
+          }) as ZodType, // ✅ Explicit typing
           handler: async ({ command }, { step }) => {
             return await step?.run("terminal", async () => {
               const buffers = { stdout: "", stderr: "" };
@@ -52,9 +57,8 @@ export const codeAgentFunction = inngest.createFunction(
                   },
                   onStderr: (data: string) => {
                     buffers.stderr += data;
-                  }
+                  },
                 });
-                // Prefer stdout; fallback to stderr or "No output"
                 return result.stdout;
               } catch (e) {
                 console.error(
@@ -73,30 +77,30 @@ export const codeAgentFunction = inngest.createFunction(
               z.object({
                 path: z.string(),
                 content: z.string(),
-              }),
+              })
             ),
           }),
-          handler: async (
-            { files },
-            { step, network }: Tool.Options<AgentState>
-          ) => {
-            const newFiles = await step?.run("createOrUpdateFiles", async () => {
-              try {
-                const updatedFiles = network.state.data.files || {}; // Initialize as empty object
-                const sandbox = await getSandbox(sandboxId);
-                for (const file of files) {
-                  await sandbox.files.write(file.path, file.content);
-                  updatedFiles[file.path] = file.content;
+          handler: async ({ files }, { step, network }) => {
+            const newFiles = await step?.run(
+              "createOrUpdateFiles",
+              async () => {
+                try {
+                  const updatedFiles = network.state.data.files || {};
+                  const sandbox = await getSandbox(sandboxId);
+                  for (const file of files) {
+                    await sandbox.files.write(file.path, file.content);
+                    updatedFiles[file.path] = file.content;
+                  }
+                  return updatedFiles;
+                } catch (e) {
+                  return `Error creating or updating files: ${e}`;
                 }
-                return updatedFiles;
-              } catch (e) {
-                return `Error creating or updating files: ${e}`;
               }
-            });
+            );
             if (typeof newFiles === "object") {
-              network.state.data.files = newFiles; // Update the network state with new files
+              network.state.data.files = newFiles;
             }
-          }
+          },
         }),
         createTool({
           name: "readFiles",
@@ -109,19 +113,17 @@ export const codeAgentFunction = inngest.createFunction(
               try {
                 const sandbox = await getSandbox(sandboxId);
                 const contents = [];
-                // Correctly iterate over array elements using 'of' instead of 'in'
                 for (const file of files) {
                   const content = await sandbox.files.read(file);
                   contents.push({ path: file, content });
                 }
-                // Corrected `JSON.stringfy` to `JSON.stringify`
                 return JSON.stringify(contents);
-              } catch (e) { // Ensure error is typed and handled
+              } catch (e) {
                 return "Error reading files: " + e;
               }
             });
           },
-        })
+        }),
       ],
       lifecycle: {
         onResponse: async ({ result, network }) => {
@@ -154,10 +156,12 @@ export const codeAgentFunction = inngest.createFunction(
 
     const result = await network.run(event.data.value);
 
-    const isError = !result.state.data.summary || Object.keys(result.state.data.files || {}).length === 0;
+    const isError =
+      !result.state.data.summary ||
+      Object.keys(result.state.data.files || {}).length === 0;
 
-    // 5. Get the public URL for the sandbox (if applicable)
     const sandboxUrl = await step.run("get-sandbox-url", async () => {
+      const sandbox = await getSandbox(sandboxId);
       const host = sandbox.getHost(3000);
       return `https://${host}`;
     });
@@ -189,12 +193,11 @@ export const codeAgentFunction = inngest.createFunction(
       });
     });
 
-    // 6. Return both the summary and sandbox link
     return {
       url: sandboxUrl,
       title: "Fragment",
       files: result.state.data.files,
       summary: result.state.data.summary,
     };
-  },
+  }
 );
