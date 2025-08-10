@@ -7,20 +7,27 @@ import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
+import { err } from "inngest/types";
+import { e } from "node_modules/@inngest/agent-kit/dist/agent-Df6e3z3X";
+
 
 
 export default function BuilderPage() {
+
+    const router=useRouter();
     const [value, setInput] = useState("");
     const trpc = useTRPC();
-    const {data: messages} = useQuery(trpc.messages.getMany.queryOptions());
-    const createMessage = useMutation(trpc.messages.create.mutationOptions({
-        onSuccess: () => {
-            toast.success("AI is working on it");
+    
+    const createProject = useMutation(trpc.projects.create.mutationOptions({
+        
+        onError: (error) => {
+            toast.error(error.message);
         },
-        onError: () => {
-            toast.error("Something went wrong!");
+        onSuccess: (data) => {
+            toast.success("Project created successfully!");
+            router.push(`/projects/${data.id}`);
         },
     }));
 
@@ -148,8 +155,8 @@ export default function BuilderPage() {
                                 variant="default"
                                 size="sm"
                                 className="rounded-full p-2 h-auto"
-                                disabled={createMessage.isPending || !value.trim()}
-                                onClick={() => createMessage.mutate({ value: value })}
+                                disabled={createProject.isPending || !value.trim()}
+                                onClick={() => createProject.mutate({ value: value })}
                                 
                             >
                                 
