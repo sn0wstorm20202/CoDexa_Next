@@ -1,26 +1,27 @@
-# Base image
+# You can use most Debian-based base images
 FROM node:21-slim
 
-# Install required packages
+# Install curl
 RUN apt-get update && apt-get install -y curl && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+COPY compile_page.sh /compile_page.sh
+RUN chmod +x /compile_page.sh
+
 # Set working directory
-WORKDIR /home/user/app
+WORKDIR /home/user/nextjs-app
 
-# Copy package.json & package-lock.json first (better caching)
-COPY package*.json ./
+# Create Next.js app
+RUN npx --yes create-next-app@15.3.3 . --yes
 
-# Install dependencies
-RUN npm install
+# Initialize shadcn UI
+RUN npx --yes shadcn@2.6.3 init --yes -b neutral --force
 
-# Copy all project files
-COPY . .
+# OPTIONAL: Add individual components (instead of all)
+# You can replace these with only what you need to keep image light and avoid network issues
+RUN npx --yes shadcn@2.6.3 add button input card --yes
 
-# Build the project (TypeScript/Next.js)
-RUN npm run build
+# If you really need all components, add retry logic
+# RUN until npx --yes shadcn@2.6.3 add --all --yes; do echo "Retrying..."; sleep 5; done
 
-# Expose the port (if Next.js runs)
-EXPOSE 3000
-
-# Default command
-CMD ["npm", "run", "start"]
+# Move the app to home and clean up
+RUN mv /home/user/nextjs-app/* /home/user/ && rm -rf /home/user/nextjs-app
