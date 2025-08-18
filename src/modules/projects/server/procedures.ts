@@ -3,18 +3,26 @@ import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import { z } from "zod";
 import { inngest } from "@/inngest/client";
 import { generateSlug } from "random-word-slugs"
+import { tr } from "date-fns/locale";
+import { trpc } from "@/trpc/server";
+import { TRPCError } from "@trpc/server";
 
 
 export const projectsRouter = createTRPCRouter({
-    getMany: baseProcedure
-        .query(async () => {
-            const projects = await prisma.project.findMany({
-                orderBy: {
-                    updatedAt: "desc",
+    getOne: baseProcedure
+        .input(z.object({
+            id: z.string().min(1, { message: "Project ID is required" }),
+        }))
+        .query(async ({input}) => {
+            const existingProject = await prisma.project.findUnique({
+                where: {
+                    id: input.id,
                 },
-
             });
-            return projects;
+            if (!existingProject) {
+                throw new TRPCError({code: "NOT_FOUND", message: "Project not found"}); 
+            }
+            return existingProject;
         }),
 
 
@@ -22,8 +30,8 @@ export const projectsRouter = createTRPCRouter({
         .input(
             z.object({
                 value: z.string()
-                .min(1, { message: "Value is required" })
-                .max(10000, { message: "Value is too long" }),
+                    .min(1, { message: "Value is required" })
+                    .max(10000, { message: "Value is too long" }),
             }),
         )
         .mutation(async ({ input }) => {
@@ -41,7 +49,7 @@ export const projectsRouter = createTRPCRouter({
                     },
                 }
             })
-            
+
             await inngest.send({
                 name: "code-agent/run",
                 data: {
