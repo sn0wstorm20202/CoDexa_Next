@@ -1,10 +1,10 @@
 import Sandbox from "@e2b/code-interpreter";
 import { AgentResult, TextMessage } from "@inngest/agent-kit";
-import { SANDBOX_TIMEOUT } from "./type";
+import { SANDBOX_TIMEOUt } from "./type";
 
 export async function getSandbox(sandboxId:string) {
     const sandbox = await Sandbox.connect(sandboxId)
-    await sandbox.setTimeout(SANDBOX_TIMEOUT);
+    await sandbox.setTimeout(SANDBOX_TIMEOUt);
     return sandbox;
 };
 

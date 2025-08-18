@@ -15,7 +15,7 @@ import { prisma } from "@/lib/db";
 
 import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
-import { SANDBOX_TIMEOUT } from "./type";
+import { SANDBOX_TIMEOUt } from "./type";
 
 interface AgentState {
   summary: string;
@@ -29,7 +29,7 @@ export const codeAgentFunction = inngest.createFunction(
     // 1. Spin up a new E2B sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vibe-codexa-123-code-2");
-      await sandbox.setTimeout(SANDBOX_TIMEOUT)
+      await sandbox.setTimeout(SANDBOX_TIMEOUt)
       return sandbox.sandboxId;
     });
 
