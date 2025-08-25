@@ -1,8 +1,10 @@
 import { useSuspenseQuery ,useQuery} from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
+import { Fragment } from "generated/prisma";
 import { MessageForm } from "./message-form";
 import { MessageCard } from "./message-card";
 import { useEffect, useRef, useState } from "react";
+import { MessageLoading } from "./message-loading";
   
 
 
@@ -15,9 +17,15 @@ THANKS!!!!
 */ 
 interface Props {
   projectId: string;
-}
+  activeFragment: Fragment | null ;
+  setActiveFragment: (fragment: Fragment | null) => void;
+};
 
-export const MessagesContainer = ({ projectId }: Props) => {
+export const MessagesContainer = ({
+   projectId ,
+   activeFragment,
+   setActiveFragment
+  }: Props) => {
   const trpc = useTRPC();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -26,8 +34,9 @@ export const MessagesContainer = ({ projectId }: Props) => {
   const { data: messages } = useQuery( //In video he use useSuspenseQuery
     trpc.messages.getMany.queryOptions({
       projectId,
-    })
-  );
+    }, {
+      refetchInterval: 5000,
+    }));
 
   // mark mounted once on client
   useEffect(() => {
@@ -39,13 +48,14 @@ export const MessagesContainer = ({ projectId }: Props) => {
 
   // find last ASSISTANT message (safe across runtimes)
   useEffect(() => {
-    const lastAssistantMessage = [...safeMessages]
+    const lastAssistantMessageWithFragment = [...safeMessages]
       .reverse()
-      .find((m) => m.role === "ASSISTANT");
-    if (lastAssistantMessage) {
-      // TODO: set active fragment
+      .find((m) => m.role === "ASSISTANT" && !!m.fragment,
+    );
+    if (lastAssistantMessageWithFragment ) {
+      setActiveFragment(lastAssistantMessageWithFragment.fragment);
     }
-  }, [safeMessages]);
+  }, [safeMessages , setActiveFragment]);
 
   // auto-scroll when list length changes
   useEffect(() => {
@@ -55,6 +65,10 @@ export const MessagesContainer = ({ projectId }: Props) => {
   if (!mounted) {
     return <div>Loading...</div>;
   }
+
+  const LastMessage = safeMessages[safeMessages.length - 1];
+  const isLastMessageUser = LastMessage?.role === "USER";
+
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -68,11 +82,12 @@ export const MessagesContainer = ({ projectId }: Props) => {
               // Prisma returns `fragment`; MessageCard expects `fragments`
               fragment={message.fragment ?? null}
               createdAt={new Date(message.createdAt)}
-              isActiveFragment={false}
-              onFragmentClick={() => {}}
+              isActiveFragment={activeFragment?.id === message.fragment?.id}
+              onFragmentClick={() => setActiveFragment(message.fragment)}
               type={message.type}
             />
           ))}
+          {isLastMessageUser && <MessageLoading />}
           <div ref={bottomRef} />
         </div>
       </div>

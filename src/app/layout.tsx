@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
+import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from "@/components/ui/toaster"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { TRPCReactProvider } from "@/trpc/client"
 import { ReactQueryProvider } from '@/components/ReactQueryProvider'
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,12 +22,19 @@ export default function RootLayout({
 }) {
     return (
         <TRPCReactProvider>
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body className={inter.className} suppressHydrationWarning={true}>
                 <ReactQueryProvider>
                     <TooltipProvider>
+                        <ThemeProvider
+                            attribute="class"
+                            defaultTheme="system"
+                            enableSystem
+                            disableTransitionOnChange
+                        >
                         <Toaster />
                         {children}
+                        </ThemeProvider>
                     </TooltipProvider>
                 </ReactQueryProvider>
             </body>
