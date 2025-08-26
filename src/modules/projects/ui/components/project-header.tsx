@@ -23,7 +23,9 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
+} from  "@/components/ui/dropdown-menu";
+
+
 
 interface Props{
     projectId: string;
@@ -43,7 +45,7 @@ export const ProjectHeader = ({ projectId }: Props) => {
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
            <Button
-              variant= "secondary"
+              variant= "ghost"
               size= "sm"
               className="focus-visible:ring-0 hover:bg-transparent hover:opacity-75
               transition-opacity pl-2!"
@@ -59,12 +61,14 @@ export const ProjectHeader = ({ projectId }: Props) => {
         <Link href="/">
         <ChevronLeftIcon/>
         <span>
+            
             Go to Dashboard
+            
         </span>
         </Link>
 
         </DropdownMenuItem>
-        <DropdownMenuSeparator/>
+        <DropdownMenuSeparator />
         <DropdownMenuSub>
             <DropdownMenuSubTrigger className="gap-2">
                 <SunMoonIcon className="size-4 text-muted-foreground" />

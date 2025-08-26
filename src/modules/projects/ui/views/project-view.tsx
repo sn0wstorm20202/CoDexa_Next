@@ -3,7 +3,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { json } from "stream/consumers";
-
+import { Fragment } from "generated/prisma";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -15,7 +15,7 @@ import { MessagesContainer } from "@/modules/projects/ui/components/messages-con
 import { Suspense, useState } from "react";
 
 
-import { Fragment } from "generated/prisma";
+
 
 
 
@@ -33,7 +33,7 @@ export const ProjectView = ({ projectId }: Props) => {
                     minSize={20}
                     className="flex flex-col min-h-0"
                 >
-                    <Suspense>fallback={<p>Loading project...</p>}
+                    <Suspense fallback={<p>Loading project...</p>}>
                       <ProjectHeader projectId = { projectId } />
                     </Suspense>
                     <Suspense fallback={<p>Loading messages...</p>}>
