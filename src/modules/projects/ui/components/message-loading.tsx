@@ -37,7 +37,7 @@ const ShimmerMessages = () => {
 
 export const MessageLoading = () => {
     return (
-        <div className="flex flex group px-2 pb-4">
+        <div className="flex flex-col group px-2 pb-4">
             <div className="flex items-center gap-2 pl-2 mb-2">
                 <Image
                     src="/logo.svg"
@@ -48,7 +48,7 @@ export const MessageLoading = () => {
                 />
                 <span className="text-sm font-medium">Codexa</span>
             </div>   
-            <div> className="pl-8.5 flex flex-col gap-y-4"
+            <div className="pl-8.5 flex flex-col gap-y-4">
                < ShimmerMessages /> 
             </div>   
         </div>
