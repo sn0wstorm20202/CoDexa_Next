@@ -4,6 +4,8 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Paperclip, Mic, Image, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
@@ -12,6 +14,7 @@ import { useRouter } from "next/navigation";
 export default function BuilderPage() {
     const router = useRouter();
     const [value, setInput] = useState("");
+    const [enhance, setEnhance] = useState(false); // State for the checkbox
     const trpc = useTRPC();
 
     // TRPC mutation to create a project (server triggers Inngest)
@@ -117,7 +120,7 @@ export default function BuilderPage() {
                             onChange={handleImageChange}
                         />
 
-                        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between">
+                        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-2">
                             <div className="flex items-center gap-3">
                                 <Button
                                     variant="ghost"
@@ -145,6 +148,18 @@ export default function BuilderPage() {
                                 >
                                     <Image size={18} />
                                 </Button>
+                                
+                                {/* --- ADDED CHECKBOX --- */}
+                                <div className="flex items-center space-x-2 pl-2">
+                                    <Checkbox 
+                                        id="enhance" 
+                                        checked={enhance} 
+                                        onCheckedChange={(checked) => setEnhance(Boolean(checked))} 
+                                    />
+                                    <Label htmlFor="enhance" className="cursor-pointer text-sm font-medium">
+                                        Enhance Prompt
+                                    </Label>
+                                </div>
                             </div>
 
                             <Button
@@ -152,7 +167,8 @@ export default function BuilderPage() {
                                 size="sm"
                                 className="rounded-full p-2 h-auto"
                                 disabled={createProject.isPending || !value.trim()}
-                                onClick={() => createProject.mutate({ value })}
+                                // --- UPDATED MUTATION CALL ---
+                                onClick={() => createProject.mutate({ value, enhance })}
                             >
                                 <ArrowUp size={18} />
                             </Button>
