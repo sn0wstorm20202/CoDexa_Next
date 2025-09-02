@@ -9,10 +9,8 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-
 import { PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
-
 import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { SANDBOX_TIMEOUt } from "./type";
@@ -20,8 +18,48 @@ import { SANDBOX_TIMEOUt } from "./type";
 interface AgentState {
   summary: string;
   files: { [path: string]: string };
-};
+}
 
+/**
+ * Prompt Enhancer Function
+ * - Enhances prompt
+ * - Then fires `code-agent/run` with enhanced text
+ */
+export const promptEnhancerFunction = inngest.createFunction(
+  { id: "prompt-enhancer" },
+  { event: "code-agent/enhance" }, // renamed event to match router
+  async ({ event }) => {
+    const { value, projectId } = event.data;
+
+    const model = gemini({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: "gemini-2.0-flash", // faster, cheaper
+    });
+
+    const response = await model.respond([
+      { role: "system", content: "Enhance user prompts to be clearer, detailed, and creative." },
+      { role: "user", content: value },
+    ]);
+
+    const enhanced = response.content;
+
+    // 🔗 Fire code-agent/run with enhanced text
+    await inngest.send({
+      name: "code-agent/run",
+      data: {
+        value: enhanced,
+        projectID: projectId,
+      },
+    });
+
+    return { enhanced };
+  }
+);
+
+/**
+ * Code Agent Function
+ * - Runs coding agent logic
+ */
 export const codeAgentFunction = inngest.createFunction(
   { id: "code-agent" },
   { event: "code-agent/run" },
@@ -29,7 +67,7 @@ export const codeAgentFunction = inngest.createFunction(
     // 1. Spin up a new E2B sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vibe-codexa-123-code-2");
-      await sandbox.setTimeout(SANDBOX_TIMEOUt)
+      await sandbox.setTimeout(SANDBOX_TIMEOUt);
       return sandbox.sandboxId;
     });
 
@@ -40,17 +78,15 @@ export const codeAgentFunction = inngest.createFunction(
       system: PROMPT,
       model: gemini({
         apiKey: process.env.GEMINI_API_KEY,
-        model: "gemini-2.5-flash"
-        
+        model: "gemini-2.5-flash",
       }),
-           // ✅ Fixed type name
       tools: [
         createTool({
           name: "terminal",
           description: "Use this tool to run terminal commands in the sandbox",
           parameters: z.object({
             command: z.string(),
-          }) as ZodType, // ✅ Explicit typing
+          }) as ZodType,
           handler: async ({ command }, { step }) => {
             return await step?.run("terminal", async () => {
               const buffers = { stdout: "", stderr: "" };
@@ -87,22 +123,19 @@ export const codeAgentFunction = inngest.createFunction(
             ),
           }),
           handler: async ({ files }, { step, network }) => {
-            const newFiles = await step?.run(
-              "createOrUpdateFiles",
-              async () => {
-                try {
-                  const updatedFiles = network.state.data.files || {};
-                  const sandbox = await getSandbox(sandboxId);
-                  for (const file of files) {
-                    await sandbox.files.write(file.path, file.content);
-                    updatedFiles[file.path] = file.content;
-                  }
-                  return updatedFiles;
-                } catch (e) {
-                  return `Error creating or updating files: ${e}`;
+            const newFiles = await step?.run("createOrUpdateFiles", async () => {
+              try {
+                const updatedFiles = network.state.data.files || {};
+                const sandbox = await getSandbox(sandboxId);
+                for (const file of files) {
+                  await sandbox.files.write(file.path, file.content);
+                  updatedFiles[file.path] = file.content;
                 }
+                return updatedFiles;
+              } catch (e) {
+                return `Error creating or updating files: ${e}`;
               }
-            );
+            });
             if (typeof newFiles === "object") {
               network.state.data.files = newFiles;
             }
@@ -133,8 +166,7 @@ export const codeAgentFunction = inngest.createFunction(
       ],
       lifecycle: {
         onResponse: async ({ result, network }) => {
-          const lastAssistantMessageText =
-            lastAssistantTextMessageContent(result);
+          const lastAssistantMessageText = lastAssistantTextMessageContent(result);
 
           if (lastAssistantMessageText && network) {
             if (lastAssistantMessageText.includes("<task_summary>")) {
@@ -176,7 +208,7 @@ export const codeAgentFunction = inngest.createFunction(
       if (isError) {
         return await prisma.message.create({
           data: {
-            projectId: event.data.projectID, // Associate with project
+            projectId: event.data.projectID,
             content: "Something went wrong. please try again.",
             role: "ASSISTANT",
             type: "ERROR",
@@ -186,7 +218,7 @@ export const codeAgentFunction = inngest.createFunction(
 
       return prisma.message.create({
         data: {
-          projectId: event.data.projectID, // Associate with project
+          projectId: event.data.projectID,
           content: result.state.data.summary,
           role: "ASSISTANT",
           type: "RESULT",
