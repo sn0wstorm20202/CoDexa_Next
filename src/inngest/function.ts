@@ -31,17 +31,47 @@ export const promptEnhancerFunction = inngest.createFunction(
   async ({ event }) => {
     const { value, projectId } = event.data;
 
-    const model = gemini({
-      apiKey: process.env.GEMINI_API_KEY,
-      model: "gemini-2.0-flash", // faster, cheaper
-    });
+    // --- FIX: Using a direct fetch call for the Gemini API ---
+    let enhanced = value; // Default to original value in case of an error
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY is not set.");
+      }
+      
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+      
+      const fullPrompt = `System instruction: Enhance the following user prompt to be clearer, more detailed, and creative for a code generation agent. Respond only with the enhanced prompt and nothing else.\n\nUser Prompt: "${value}"`;
 
-    const response = await model.respond([
-      { role: "system", content: "Enhance user prompts to be clearer, detailed, and creative." },
-      { role: "user", content: value },
-    ]);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: fullPrompt }]
+          }]
+        })
+      });
 
-    const enhanced = response.content;
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Gemini API request failed with status ${response.status}: ${errorBody}`);
+      }
+
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (generatedText) {
+        enhanced = generatedText.trim();
+      }
+
+    } catch (error) {
+      console.error("Error enhancing prompt:", error);
+      // We'll proceed with the original prompt if enhancement fails.
+    }
+
 
     // 🔗 Fire code-agent/run with enhanced text
     await inngest.send({
@@ -241,3 +271,4 @@ export const codeAgentFunction = inngest.createFunction(
     };
   }
 );
+
