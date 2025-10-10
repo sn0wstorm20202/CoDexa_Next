@@ -4,32 +4,31 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Paperclip, Mic, Image, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { err } from "inngest/types";
-import { e } from "node_modules/@inngest/agent-kit/dist/agent-Df6e3z3X";
-
-
 
 export default function BuilderPage() {
-
-    const router=useRouter();
+    const router = useRouter();
     const [value, setInput] = useState("");
+    const [enhance, setEnhance] = useState(false); // State for the checkbox
     const trpc = useTRPC();
-    
-    const createProject = useMutation(trpc.projects.create.mutationOptions({
-        
-        onError: (error) => {
-            toast.error(error.message);
-        },
-        onSuccess: (data) => {
-            toast.success("Project created successfully!");
-            router.push(`/projects/${data.id}`);
-        },
-    }));
+
+    // TRPC mutation to create a project (server triggers Inngest)
+    const createProject = useMutation(
+        trpc.projects.create.mutationOptions({
+            onError: (error) => {
+                toast.error(error.message);
+            },
+            onSuccess: (data) => {
+                toast.success("Project created successfully!");
+                router.push(`/projects/${data.id}`);
+            },
+        })
+    );
 
     const suggestions = [
         "Create a financial app",
@@ -121,7 +120,7 @@ export default function BuilderPage() {
                             onChange={handleImageChange}
                         />
 
-                        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between">
+                        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-2">
                             <div className="flex items-center gap-3">
                                 <Button
                                     variant="ghost"
@@ -149,6 +148,18 @@ export default function BuilderPage() {
                                 >
                                     <Image size={18} />
                                 </Button>
+                                
+                                {/* --- ADDED CHECKBOX --- */}
+                                <div className="flex items-center space-x-2 pl-2">
+                                    <Checkbox 
+                                        id="enhance" 
+                                        checked={enhance} 
+                                        onCheckedChange={(checked) => setEnhance(Boolean(checked))} 
+                                    />
+                                    <Label htmlFor="enhance" className="cursor-pointer text-sm font-medium">
+                                        Enhance Prompt
+                                    </Label>
+                                </div>
                             </div>
 
                             <Button
@@ -156,10 +167,9 @@ export default function BuilderPage() {
                                 size="sm"
                                 className="rounded-full p-2 h-auto"
                                 disabled={createProject.isPending || !value.trim()}
-                                onClick={() => createProject.mutate({ value: value })}
-                                
+                                // --- UPDATED MUTATION CALL ---
+                                onClick={() => createProject.mutate({ value, enhance })}
                             >
-                                
                                 <ArrowUp size={18} />
                             </Button>
                         </div>
@@ -175,18 +185,9 @@ export default function BuilderPage() {
                     <p className="text-muted-foreground mb-4">or import from</p>
                     <div className="flex items-center justify-center gap-4">
                         <Button variant="outline" className="glass border-purple-500/20 hover:border-purple-500/40">
-                            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
                             Figma
                         </Button>
                         <Button variant="outline" className="glass border-gray-500/20 hover:border-gray-500/40">
-                            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none">
-                                <path d="M9 19C-1 12 2 3 9 3C16 3 19 12 9 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M9 19C9 19 13 20 16 17C19 14 16 10 13 10H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
                             GitHub
                         </Button>
                     </div>
