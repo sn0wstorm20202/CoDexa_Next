@@ -42,6 +42,24 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
   const selectedFileContent = selectedFile ? files[selectedFile] : "";
   const AUTOSAVE_DELAY = 2000; // 2 seconds
 
+  // Suppress Monaco cancellation errors globally
+  useEffect(() => {
+    const originalConsoleError = console.error;
+    console.error = (...args: unknown[]) => {
+      const message = args[0];
+      // Filter out Monaco cancellation errors
+      if (typeof message === 'string' && message.includes('Canceled')) {
+        console.log('⚠️ Suppressed Monaco cancellation error (this is normal)');
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalConsoleError;
+    };
+  }, []);
+
   // Update editor content when selected file changes
   useEffect(() => {
     if (selectedFile && files[selectedFile]) {
@@ -73,6 +91,11 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
         console.log('🚀 Calling onSave function...');
         await onSave(selectedFile, editorContent);
         console.log('✅ onSave completed successfully');
+        
+        // Update parent component with saved content
+        console.log('🔍 Updating parent component after successful save');
+        onFileContentChange(selectedFile, editorContent);
+        
         setIsModified(false);
         setSaveStatus('saved');
         setLastSavedTime(new Date());
@@ -105,7 +128,7 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
         contentChanged: editorContent !== selectedFileContent
       });
     }
-  }, [selectedFile, isModified, onSave, editorContent, selectedFileContent]);
+  }, [selectedFile, isModified, onSave, editorContent, selectedFileContent, onFileContentChange]);
 
   // Setup autosave timer
   useEffect(() => {
@@ -175,37 +198,62 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
     return languageMap[extension] || 'plaintext';
   };
 
-  const handleEditorChange = (value: string | undefined) => {
-    const newContent = value || "";
-    console.log('🔄 Editor content changed:', {
-      selectedFile,
-      contentLength: newContent.length,
-      originalLength: selectedFileContent.length,
-      hasChanges: newContent !== selectedFileContent
-    });
-    
-    setEditorContent(newContent);
-    const hasChanges = newContent !== selectedFileContent;
-    setIsModified(hasChanges);
-    setSaveStatus(hasChanges ? 'unsaved' : 'saved');
-    
-    console.log('📊 Save status updated:', {
-      hasChanges,
-      saveStatus: hasChanges ? 'unsaved' : 'saved',
-      onSaveAvailable: !!onSave
-    });
-    
-    // Update parent component
-    if (selectedFile) {
-      onFileContentChange(selectedFile, newContent);
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    try {
+      const newContent = value || "";
+      
+      console.log('🔄 Editor content changed - DETAILED DEBUG:', {
+        selectedFile,
+        newContentLength: newContent.length,
+        selectedFileContentLength: selectedFileContent.length,
+        newContentPreview: newContent.substring(0, 100) + '...',
+        selectedFileContentPreview: selectedFileContent.substring(0, 100) + '...',
+        areEqual: newContent === selectedFileContent,
+        hasChanges: newContent !== selectedFileContent
+      });
+      
+      console.log('🔍 Calling setEditorContent with:', newContent.length + ' chars');
+      setEditorContent(newContent);
+      
+      const hasChanges = newContent !== selectedFileContent;
+      console.log('🔍 Calling setIsModified with:', hasChanges);
+      setIsModified(hasChanges);
+      
+      const newStatus = hasChanges ? 'unsaved' : 'saved';
+      console.log('🔍 Calling setSaveStatus with:', newStatus);
+      setSaveStatus(newStatus);
+      
+      console.log('📊 Save status update completed:', {
+        hasChanges,
+        newStatus,
+        onSaveAvailable: !!onSave
+      });
+      
+      // DON'T update parent component here - it causes state race condition!
+      // We'll update it after successful save instead
+      
+      // Force a re-render check
+      console.log('🔄 State should now be: isModified =', hasChanges);
+    } catch (error) {
+      // Suppress Monaco cancellation errors - they're benign
+      if (error instanceof Error && error.message.includes('Canceled')) {
+        console.log('⚠️ Monaco cancellation error suppressed (this is normal during rapid typing)');
+        return;
+      }
+      console.error('❌ Error in handleEditorChange:', error);
     }
-  };
+  }, [selectedFile, selectedFileContent, onSave]);
 
   const handleManualSave = async () => {
     if (selectedFile && isModified && onSave) {
       setSaveStatus('saving');
       try {
         await onSave(selectedFile, editorContent);
+        
+        // Update parent component with saved content
+        console.log('🔍 Updating parent component after successful manual save');
+        onFileContentChange(selectedFile, editorContent);
+        
         setIsModified(false);
         setSaveStatus('saved');
         setLastSavedTime(new Date());
@@ -320,16 +368,6 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
     }
   };
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    
-    if (diffSecs < 60) return "just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    return date.toLocaleTimeString();
-  };
 
   if (!selectedFile) {
     return (
@@ -427,8 +465,15 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
             variant="ghost"
             size="sm"
             onClick={() => {
-              console.log('🧪 Test button clicked - forcing change');
-              const testContent = editorContent + ' // test change';
+              console.log('🧪 Test button clicked - BEFORE change');
+              console.log('🧪 Current state:', {
+                editorContentLength: editorContent.length,
+                selectedFileContentLength: selectedFileContent.length,
+                isModified,
+                saveStatus
+              });
+              const testContent = editorContent + ' // test change ' + Date.now();
+              console.log('🧪 About to call handleEditorChange with:', testContent.length + ' chars');
               handleEditorChange(testContent);
             }}
             className="h-7 px-2 text-orange-500 border-orange-500/20"
@@ -465,13 +510,22 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
             language={getLanguage(selectedFile)}
             value={editorContent}
             onChange={(value, event) => {
-              console.log('📝 Monaco Editor onChange fired:', {
-                newValueLength: value?.length || 0,
-                currentValueLength: editorContent.length,
-                selectedFile,
-                event: event?.changes?.length || 0 + ' changes'
-              });
-              handleEditorChange(value);
+              try {
+                console.log('📝 Monaco Editor onChange fired:', {
+                  newValueLength: value?.length || 0,
+                  currentValueLength: editorContent.length,
+                  selectedFile,
+                  event: event?.changes?.length || 0 + ' changes'
+                });
+                handleEditorChange(value);
+              } catch (error) {
+                // Suppress Monaco cancellation errors
+                if (error instanceof Error && error.message.includes('Canceled')) {
+                  console.log('⚠️ Monaco onChange cancellation error suppressed');
+                  return;
+                }
+                console.error('❌ Error in Monaco onChange:', error);
+              }
             }}
             theme="vs-dark"
             options={{
@@ -488,14 +542,23 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
               folding: true,
               matchBrackets: 'always',
               autoIndent: 'advanced',
-              formatOnType: true,
+              formatOnType: false, // Disable to reduce rapid change events
               formatOnPaste: true,
               suggestOnTriggerCharacters: true,
               acceptSuggestionOnEnter: 'on',
-              quickSuggestions: true,
+              quickSuggestions: {
+                other: true,
+                comments: false,
+                strings: false
+              },
               parameterHints: { enabled: true },
               hover: { enabled: true },
               contextmenu: true,
+              // Reduce update frequency to minimize cancellations
+              smoothScrolling: false,
+              cursorSmoothCaretAnimation: 'off',
+              // Enable stable content widget positioning
+              stablePeek: true,
             }}
             onMount={(editor) => {
               console.log('🚀 Monaco Editor mounted:', {
@@ -506,11 +569,20 @@ export function AutosaveCodeEditor({ files, selectedFile, onFileContentChange, o
               setIsLoading(false);
               editor.focus();
               
-              // Add additional change listener as backup
+              // Add additional change listener as backup with error handling
               editor.onDidChangeModelContent((e) => {
-                console.log('📝 Monaco onDidChangeModelContent fired:', e.changes.length + ' changes');
-                const newValue = editor.getValue();
-                handleEditorChange(newValue);
+                try {
+                  console.log('📝 Monaco onDidChangeModelContent fired:', e.changes.length + ' changes');
+                  const newValue = editor.getValue();
+                  handleEditorChange(newValue);
+                } catch (error) {
+                  // Suppress Monaco cancellation errors
+                  if (error instanceof Error && error.message.includes('Canceled')) {
+                    console.log('⚠️ Monaco onDidChangeModelContent cancellation error suppressed');
+                    return;
+                  }
+                  console.error('❌ Error in onDidChangeModelContent:', error);
+                }
               });
             }}
           />

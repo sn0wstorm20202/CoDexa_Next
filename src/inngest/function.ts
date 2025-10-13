@@ -16,6 +16,12 @@ import { prisma } from "@/lib/db";
 import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { SANDBOX_TIMEOUt } from "./type";
+import { 
+  getConversationMemory, 
+  updateConversationMemory, 
+  generateContextualPrompt,
+  extractContextFromMessage 
+} from "./memory";
 
 interface AgentState {
   summary: string;
@@ -26,6 +32,89 @@ export const codeAgentFunction = inngest.createFunction(
   { id: "code-agent" },
   { event: "code-agent/run" },
   async ({ event, step }) => {
+    const projectId = event.data.projectID;
+    const userMessage = event.data.value;
+    
+    console.log('🚀 [AGENT] Starting agent function', {
+      projectId,
+      userMessageLength: userMessage?.length || 0,
+      userMessagePreview: userMessage?.substring(0, 100) + (userMessage?.length > 100 ? '...' : '')
+    });
+    
+    // Retrieve conversation memory
+    const memory = await step.run("get-memory", async () => {
+      console.log('🧠 [AGENT] Retrieving conversation memory...');
+      try {
+        const result = await getConversationMemory(projectId);
+        console.log('🧠 [AGENT] Memory retrieved successfully:', {
+          hasMemory: !!result,
+          lastContext: result?.lastContext,
+          currentTask: result?.currentTask,
+          recentMessagesCount: result?.recentMessages?.length || 0
+        });
+        return result;
+      } catch (error) {
+        console.error('❌ [AGENT] Error retrieving memory:', error);
+        return null;
+      }
+    });
+
+    // Extract context from current message
+    const extractedContext = await step.run("extract-context", async () => {
+      console.log('🔍 [AGENT] Extracting context from message...');
+      try {
+        const result = extractContextFromMessage(userMessage, memory || undefined);
+        console.log('🔍 [AGENT] Context extracted:', {
+          context: result.context,
+          task: result.task,
+          isModification: result.isModification,
+          domainInfoKeys: Object.keys(result.domainInfo)
+        });
+        return result;
+      } catch (error) {
+        console.error('❌ [AGENT] Error extracting context:', error);
+        throw error;
+      }
+    });
+
+    // Generate enhanced prompt with context
+    const enhancedPrompt = await step.run("generate-prompt", async () => {
+      console.log('📝 [AGENT] Generating enhanced prompt...');
+      try {
+        const result = generateContextualPrompt(PROMPT, memory, userMessage);
+        console.log('📝 [AGENT] Enhanced prompt generated:', {
+          originalPromptLength: PROMPT.length,
+          enhancedPromptLength: result.length,
+          hasContext: result !== PROMPT,
+          contextAddedLength: result.length - PROMPT.length
+        });
+        return result;
+      } catch (error) {
+        console.error('❌ [AGENT] Error generating prompt:', error);
+        return PROMPT; // Fallback to original prompt
+      }
+    });
+
+    // Update memory with user message
+    await step.run("update-memory-user", async () => {
+      console.log('💾 [AGENT] Updating memory with user message...');
+      try {
+        await updateConversationMemory(
+          projectId,
+          {
+            role: "USER",
+            content: userMessage,
+            timestamp: new Date().toISOString()
+          },
+          extractedContext
+        );
+        console.log('✅ [AGENT] User message memory updated successfully');
+      } catch (error) {
+        console.error('❌ [AGENT] Error updating user message memory:', error);
+        // Don't throw - continue with agent processing
+      }
+    });
+
     // 1. Spin up a new E2B sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vibe-codexa-123-code-2");
@@ -37,7 +126,7 @@ export const codeAgentFunction = inngest.createFunction(
       name: "code-agent",
       description:
         "An expert coding agent that can write code, run terminal commands, and summarize content.",
-      system: PROMPT,
+      system: enhancedPrompt,
       model: gemini({
         apiKey: process.env.GEMINI_API_KEY,
         model: "gemini-2.5-flash"
@@ -201,11 +290,47 @@ export const codeAgentFunction = inngest.createFunction(
       });
     });
 
-    return {
+    // Update memory with assistant response
+    await step.run("update-memory-assistant", async () => {
+      console.log('💾 [AGENT] Updating memory with assistant response...');
+      if (!isError && result.state.data.summary) {
+        try {
+          await updateConversationMemory(
+            projectId,
+            {
+              role: "ASSISTANT",
+              content: result.state.data.summary,
+              timestamp: new Date().toISOString()
+            }
+          );
+          console.log('✅ [AGENT] Assistant response memory updated successfully');
+        } catch (error) {
+          console.error('❌ [AGENT] Error updating assistant response memory:', error);
+          // Don't throw - agent has already completed successfully
+        }
+      } else {
+        console.log('⚠️ [AGENT] Skipping assistant memory update - error or no summary', {
+          isError,
+          hasSummary: !!result.state.data.summary
+        });
+      }
+    });
+
+    const finalResult = {
       url: sandboxUrl,
       title: "Fragment",
       files: result.state.data.files,
       summary: result.state.data.summary,
     };
+    
+    console.log('🎉 [AGENT] Agent function completed successfully', {
+      projectId,
+      sandboxUrl,
+      filesCount: Object.keys(result.state.data.files || {}).length,
+      hasSummary: !!result.state.data.summary,
+      isError
+    });
+    
+    return finalResult;
   }
 );
