@@ -3,8 +3,6 @@ import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import { z } from "zod";
 import { inngest } from "@/inngest/client";
 import { generateSlug } from "random-word-slugs"
-import { tr } from "date-fns/locale";
-import { trpc } from "@/trpc/server";
 import { TRPCError } from "@trpc/server";
 
 

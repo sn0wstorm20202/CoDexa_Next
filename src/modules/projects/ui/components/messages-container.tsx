@@ -1,9 +1,9 @@
-import { useSuspenseQuery ,useQuery} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { Fragment } from "generated/prisma";
 import { MessageForm } from "./message-form";
 import { MessageCard } from "./message-card";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { MessageLoading } from "./message-loading";
   
 
@@ -44,7 +44,9 @@ export const MessagesContainer = ({
   }, []);
 
   // make sure we always work with an array
-  const safeMessages = Array.isArray(messages) ? messages : [];
+  const safeMessages = useMemo(() => {
+    return Array.isArray(messages) ? messages : [];
+  }, [messages]);
 
   // find last ASSISTANT message (safe across runtimes)
   useEffect(() => {

@@ -305,7 +305,8 @@ export const codeAgentFunction = inngest.createFunction(
           
         } catch (error) {
           lastError = error;
-          console.error(`❌ [AGENT] Database save attempt ${i + 1} failed:`, error.message);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`❌ [AGENT] Database save attempt ${i + 1} failed:`, errorMessage);
           
           if (i < maxRetries - 1) {
             console.log('⏳ [AGENT] Waiting 2 seconds before retry...');
