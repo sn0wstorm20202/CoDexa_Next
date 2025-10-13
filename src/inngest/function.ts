@@ -4,7 +4,7 @@ import {
   createAgent,
   createTool,
   createNetwork,
-  gemini
+  openai
 } from "@inngest/agent-kit";
 import dotenv from "dotenv";
 dotenv.config();
@@ -127,9 +127,9 @@ export const codeAgentFunction = inngest.createFunction(
       description:
         "An expert coding agent that can write code, run terminal commands, and summarize content.",
       system: enhancedPrompt,
-      model: gemini({
-        apiKey: process.env.GEMINI_API_KEY,
-        model: "gemini-2.5-flash"
+      model: openai({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: "gpt-5-mini-2025-08-07" // Valid OpenAI model - you can also use "gpt-4o" or "gpt-3.5-turbo"
         
       }),
            // ✅ Fixed type name
