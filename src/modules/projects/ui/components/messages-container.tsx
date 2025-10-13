@@ -71,9 +71,9 @@ export const MessagesContainer = ({
 
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col flex-1 min-h-0 bg-background">
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="pt-2 pr-1">
+        <div className="p-3 space-y-4">
           {safeMessages.map((message) => (
             <MessageCard
               key={message.id}
@@ -91,8 +91,8 @@ export const MessagesContainer = ({
           <div ref={bottomRef} />
         </div>
       </div>
-      <div className="relative p-3 pt-1">
-        <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-b from-transparent to-background/70 pointer-events-none" />
+      <div className="relative p-3 border-t bg-muted/10">
+        <div className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         <MessageForm projectId={projectId} />
       </div>
     </div>
