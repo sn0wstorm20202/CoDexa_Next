@@ -21,6 +21,7 @@ model Project {
   updatedAt DateTime @updatedAt
 
   messages Message[]
+  memory   ConversationMemory?
 }
 
 enum MessageRole {
@@ -55,4 +56,24 @@ model Fragment {
   files      Json
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Conversation memory to maintain context between agent interactions
+model ConversationMemory {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Context extracted from user messages
+  lastContext String?  // Last meaningful context (e.g., "working on landing page")
+  currentTask String?  // Current task context (e.g., "creating red landing page")
+  domainInfo  Json?    // Domain-specific context (colors, layout preferences, etc.)
+  
+  // Recent conversation for context
+  recentMessages Json? // Last 5-10 messages for context
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([projectId])
 }
