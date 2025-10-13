@@ -3,8 +3,6 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import Image from "next/image";
-import { A } from "node_modules/@inngest/agent-kit/dist/agent-Df6e3z3X";
-import { Assistant } from "next/font/google";
 
 import { ChevronRightIcon, Code2Icon } from "lucide-react";
 

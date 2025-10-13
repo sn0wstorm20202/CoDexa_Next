@@ -8,9 +8,6 @@ import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { err } from "inngest/types";
-import { e } from "node_modules/@inngest/agent-kit/dist/agent-Df6e3z3X";
 
 
 
@@ -147,6 +144,7 @@ export default function BuilderPage() {
                                     className="p-2 h-auto"
                                     onClick={() => imageInputRef.current?.click()}
                                 >
+                                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                                     <Image size={18} />
                                 </Button>
                             </div>

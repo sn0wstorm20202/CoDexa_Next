@@ -148,7 +148,7 @@ User sees their custom website, NOT Next.js welcome screen
 `;
 
 // Additional debugging utilities
-export const DEBUG_COMMANDS = \`
+export const DEBUG_COMMANDS = `
 # Run these commands to diagnose issues:
 
 # 1. Check for build errors
@@ -162,9 +162,9 @@ node debug-website-editing.js
 
 # 4. Restart dev server
 # (Only if absolutely necessary - usually hot reload should work)
-\`;
+`;
 
-export const COMPONENT_SAFETY_CHECKLIST = \`
+export const COMPONENT_SAFETY_CHECKLIST = `
 Before modifying any component, verify:
 □ Does it have "use client"; if it uses hooks?
 □ Are all imports valid and pointing to existing files?
@@ -172,4 +172,4 @@ Before modifying any component, verify:
 □ Is the JSX syntax correct?
 □ Are all props properly typed?
 □ Does it handle edge cases gracefully?
-\`;
+`;
