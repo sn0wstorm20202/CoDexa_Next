@@ -1,0 +1,22 @@
+import { createBrowserClient } from '@supabase/ssr';
+
+/**
+ * Creates a Supabase client for use in browser/client components
+ * Uses public anon key - safe for client-side use
+ * 
+ * Usage in client components:
+ * import { createClient } from '@/lib/supabase/client';
+ * const supabase = createClient();
+ */
+export function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    );
+  }
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+}

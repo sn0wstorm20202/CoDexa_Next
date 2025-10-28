@@ -118,7 +118,21 @@ export const codeAgentFunction = inngest.createFunction(
     // 1. Spin up a new E2B sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vibe-codexa-123-code-2");
-      await sandbox.setTimeout(SANDBOX_TIMEOUt)
+      await sandbox.setTimeout(SANDBOX_TIMEOUt);
+      
+      // Inject Supabase credentials if available
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (supabaseUrl && supabaseAnonKey) {
+        console.log('🔧 [AGENT] Injecting Supabase credentials into sandbox');
+        const envContent = `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl}\nNEXT_PUBLIC_SUPABASE_ANON_KEY=${supabaseAnonKey}\nNEXT_PUBLIC_PROJECT_ID=${projectId}`;
+        await sandbox.files.write('.env.local', envContent);
+        console.log('✅ [AGENT] Supabase credentials injected successfully');
+      } else {
+        console.log('⚠️ [AGENT] Supabase credentials not configured - skipping injection');
+      }
+      
       return sandbox.sandboxId;
     });
 

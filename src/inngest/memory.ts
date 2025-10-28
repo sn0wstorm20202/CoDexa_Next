@@ -16,7 +16,89 @@ interface MemoryContext {
     theme?: string;
     style?: string;
   };
+  backendInfo?: {
+    database?: {
+      tables?: string[];
+      relationships?: string[];
+    };
+    auth?: {
+      enabled?: boolean;
+      providers?: string[];
+    };
+    storage?: {
+      buckets?: string[];
+    };
+    realtime?: {
+      channels?: string[];
+    };
+  };
   recentMessages?: ConversationMessage[];
+}
+
+/**
+ * Extract backend/database requirements from user message
+ */
+export function extractBackendContext(message: string, previousContext?: MemoryContext): {
+  requiresDatabase: boolean;
+  requiresAuth: boolean;
+  requiresStorage: boolean;
+  requiresRealtime: boolean;
+  tables?: string[];
+} {
+  const lowerMessage = message.toLowerCase();
+  
+  // Database indicators
+  const databaseKeywords = [
+    'database', 'table', 'store', 'save', 'persist', 'crud',
+    'create', 'read', 'update', 'delete', 'data', 'record'
+  ];
+  const requiresDatabase = databaseKeywords.some(k => lowerMessage.includes(k));
+  
+  // Auth indicators
+  const authKeywords = [
+    'login', 'signup', 'auth', 'user', 'profile', 'account',
+    'register', 'password', 'authentication', 'protected'
+  ];
+  const requiresAuth = authKeywords.some(k => lowerMessage.includes(k));
+  
+  // Storage indicators
+  const storageKeywords = [
+    'upload', 'file', 'image', 'photo', 'document', 'attachment',
+    'download', 'media', 'avatar', 'picture'
+  ];
+  const requiresStorage = storageKeywords.some(k => lowerMessage.includes(k));
+  
+  // Realtime indicators
+  const realtimeKeywords = [
+    'realtime', 'live', 'real-time', 'websocket', 'chat',
+    'notification', 'instant', 'sync'
+  ];
+  const requiresRealtime = realtimeKeywords.some(k => lowerMessage.includes(k));
+  
+  // Extract table names from common patterns
+  const tablePatterns = [
+    /(?:create|add|make|build|setup)\s+(?:a\s+)?([\w]+)\s+(?:table|database|collection)/gi,
+    /(?:store|save|persist)\s+([\w]+)/gi,
+    /([\w]+)\s+(?:table|database|collection)/gi
+  ];
+  
+  const tables: string[] = [];
+  tablePatterns.forEach(pattern => {
+    const matches = [...message.matchAll(pattern)];
+    matches.forEach(match => {
+      if (match[1] && !tables.includes(match[1])) {
+        tables.push(match[1]);
+      }
+    });
+  });
+  
+  return {
+    requiresDatabase,
+    requiresAuth,
+    requiresStorage,
+    requiresRealtime,
+    tables: tables.length > 0 ? tables : undefined
+  };
 }
 
 /**
