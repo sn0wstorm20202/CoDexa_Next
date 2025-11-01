@@ -4,6 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { json } from "stream/consumers";
 import { Fragment } from "generated/prisma";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -13,21 +14,21 @@ import { RedesignedFragment } from "../components/redesigned-fragment";
 import { ProjectHeader } from "../components/project-header";
 import { MessagesContainer } from "@/modules/projects/ui/components/messages-container";
 import { Suspense, useState } from "react";
-
-
-
-
-
+import { EyeIcon, CodeIcon, Link, CrownIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CodeView } from "@/components/code-view";
+import { FileExplorer } from "../components/file-explorer";
 
 interface Props {
     projectId: string;
 };
 export const ProjectView = ({ projectId }: Props) => {
     const [activeFragment, setActiveFragment] = useState < Fragment | null>(null);
+    const [tabState, setTabState] = useState<"preview" | "code">("preview");
 
     return (
         <div className="h-screen">
-            <ResizablePanelGroup direction="horizontal">
+            <ResizablePanelGroup direction="horizontal" id="project-view-panels">
                 <ResizablePanel
                     defaultSize={35}
                     minSize={20}
@@ -46,9 +47,45 @@ export const ProjectView = ({ projectId }: Props) => {
                 </ResizablePanel>
                 <ResizableHandle withHandle className="bg-gray-200" />
                 <ResizablePanel
+
                     defaultSize={65}
                     minSize={50}>
-                    { !!activeFragment && <RedesignedFragment data={activeFragment} />}
+                    <Tabs
+                        className="h-full gap-y-0"
+                        defaultValue="preview"
+                        value={tabState}
+                        onValueChange={(value) => setTabState(value as "preview" | "code")}
+                    >
+                        <div className="w-full flex items-center p-2 border-b gap-x-2">
+                            <TabsList className="h-8 p-0 border rounded-md">
+                                <TabsTrigger value="preview" className="rounded-md"> 
+                                    <EyeIcon/> <span> Demo </span>
+                                </TabsTrigger>
+                                <TabsTrigger value="code" className="rounded-md">
+                                    <CodeIcon/> <span> Code </span>
+                                </TabsTrigger>
+                            </TabsList>
+                            <div className="ml-auto flex items-center gap-x-2">
+                                <Button asChild size="sm" variant="default">
+                                    <Link href="/pricing">
+                                    <CrownIcon /> Upgrade
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                        <TabsContent value="preview">
+                        { !!activeFragment && <RedesignedFragment data={activeFragment} /> }   
+                        </TabsContent>
+                        <TabsContent value="code" className="min-h-0">
+                            {!!activeFragment?.files && (
+                                <FileExplorer
+                                    files={activeFragment.files as { [path: string]: string; }} selectedFile={null} onFileSelect={function (path: string): void {
+                                        throw new Error("Function not implemented.");
+                                    } }                                
+                                    />
+                            )}
+                        </TabsContent>
+                    </Tabs>
                 </ResizablePanel>
             </ResizablePanelGroup>
         </div>

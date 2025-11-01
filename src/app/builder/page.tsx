@@ -23,7 +23,8 @@ export default function BuilderPage() {
     const createProject = useMutation(trpc.projects.create.mutationOptions({
         
         onError: (error) => {
-            toast.error(error.message);
+            console.error('Project creation error:', error);
+            toast.error(error.message || 'Failed to create project. Please try again.');
         },
         onSuccess: (data) => {
             toast.success("Project created successfully!");
