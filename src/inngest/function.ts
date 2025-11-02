@@ -4,7 +4,8 @@ import {
   createAgent,
   createTool,
   createNetwork,
-  gemini
+  gemini,
+  openai
 } from "@inngest/agent-kit";
 import dotenv from "dotenv";
 dotenv.config();
@@ -16,11 +17,11 @@ import { prisma } from "@/lib/db";
 import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { SANDBOX_TIMEOUt } from "./type";
-import { 
-  getConversationMemory, 
-  updateConversationMemory, 
+import {
+  getConversationMemory,
+  updateConversationMemory,
   generateContextualPrompt,
-  extractContextFromMessage 
+  extractContextFromMessage
 } from "./memory";
 
 interface AgentState {
@@ -34,13 +35,13 @@ export const codeAgentFunction = inngest.createFunction(
   async ({ event, step }) => {
     const projectId = event.data.projectID;
     const userMessage = event.data.value;
-    
+
     console.log('🚀 [AGENT] Starting agent function', {
       projectId,
       userMessageLength: userMessage?.length || 0,
       userMessagePreview: userMessage?.substring(0, 100) + (userMessage?.length > 100 ? '...' : '')
     });
-    
+
     // Retrieve conversation memory
     const memory = await step.run("get-memory", async () => {
       console.log('🧠 [AGENT] Retrieving conversation memory...');
@@ -130,9 +131,9 @@ export const codeAgentFunction = inngest.createFunction(
       model: gemini({
         apiKey: process.env.GEMINI_API_KEY,
         model: "gemini-2.5-flash"
-        
+
       }),
-           // ✅ Fixed type name
+      // ✅ Fixed type name
       tools: [
         createTool({
           name: "terminal",
@@ -322,7 +323,7 @@ export const codeAgentFunction = inngest.createFunction(
       files: result.state.data.files,
       summary: result.state.data.summary,
     };
-    
+
     console.log('🎉 [AGENT] Agent function completed successfully', {
       projectId,
       sandboxUrl,
@@ -330,7 +331,7 @@ export const codeAgentFunction = inngest.createFunction(
       hasSummary: !!result.state.data.summary,
       isError
     });
-    
+
     return finalResult;
   }
 );
