@@ -14,10 +14,11 @@ import { RedesignedFragment } from "../components/redesigned-fragment";
 import { ProjectHeader } from "../components/project-header";
 import { MessagesContainer } from "@/modules/projects/ui/components/messages-container";
 import { Suspense, useState } from "react";
-import { EyeIcon, CodeIcon, Link, CrownIcon } from "lucide-react";
+import { EyeIcon, CodeIcon, Link, CrownIcon, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CodeView } from "@/components/code-view";
 import { FileExplorer } from "../components/file-explorer";
+import { UserControl } from "@/components/user-control";
 
 interface Props {
     projectId: string;
@@ -71,6 +72,7 @@ export const ProjectView = ({ projectId }: Props) => {
                                     <CrownIcon /> Upgrade
                                     </Link>
                                 </Button>
+                                <UserControl />
                             </div>
                         </div>
                         <TabsContent value="preview">

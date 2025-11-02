@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { TRPCReactProvider } from "@/trpc/client"
 import { ReactQueryProvider } from '@/components/ReactQueryProvider'
-
+import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,24 +21,26 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <TRPCReactProvider>
-        <html lang="en" suppressHydrationWarning>
-            <body className={inter.className} suppressHydrationWarning={true}>
-                <ReactQueryProvider>
-                    <TooltipProvider>
-                        <ThemeProvider
-                            attribute="class"
-                            defaultTheme="system"
-                            enableSystem
-                            disableTransitionOnChange
-                        >
-                        <Toaster />
-                        {children}
-                        </ThemeProvider>
-                    </TooltipProvider>
-                </ReactQueryProvider>
-            </body>
-        </html>
-        </TRPCReactProvider>
-    )
-} 
+        <ClerkProvider>
+            <TRPCReactProvider>
+                <html lang="en" suppressHydrationWarning>
+                    <body className={inter.className} suppressHydrationWarning={true}>
+                        <ReactQueryProvider>
+                            <TooltipProvider>
+                                <ThemeProvider
+                                    attribute="class"
+                                    defaultTheme="system"
+                                    enableSystem
+                                    disableTransitionOnChange
+                                >
+                                    <Toaster />
+                                    {children}
+                                </ThemeProvider>
+                            </TooltipProvider>
+                        </ReactQueryProvider>
+                    </body>
+                </html>
+            </TRPCReactProvider>
+        </ClerkProvider>
+    );
+};

@@ -11,17 +11,19 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { err } from "inngest/types";
 import { e } from "node_modules/@inngest/agent-kit/dist/agent-Df6e3z3X";
+import { Navbar } from "@/modules/home/ui/components/navbar";
+import { ProjectsList } from "@/modules/home/ui/components/projects-list";
 
 
 
 export default function BuilderPage() {
 
-    const router=useRouter();
+    const router = useRouter();
     const [value, setInput] = useState("");
     const trpc = useTRPC();
-    
+
     const createProject = useMutation(trpc.projects.create.mutationOptions({
-        
+
         onError: (error) => {
             console.error('Project creation error:', error);
             toast.error(error.message || 'Failed to create project. Please try again.');
@@ -33,12 +35,15 @@ export default function BuilderPage() {
     }));
 
     const suggestions = [
-        "Create a financial app",
-        "Design a directory website",
-        "Build a project management app",
-        "Make a landing page",
-        "Generate a CRM",
-        "Build a mobile app"
+        "🎬 Build a Netflix clone",
+        "📦 Build an admin dashboard",
+        "📋 Build a kanban board",
+        "🗂️ Build a file manager",
+        "📺 Build a YouTube clone",
+        "🛍️ Build a store page",
+        "💼 Build a portfolio website",
+        "🏡 Build an Airbnb clone",
+        "🎵 Build a Spotify clone"
     ];
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +74,7 @@ export default function BuilderPage() {
 
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-6">
+            <Navbar />
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -158,9 +164,9 @@ export default function BuilderPage() {
                                 className="rounded-full p-2 h-auto"
                                 disabled={createProject.isPending || !value.trim()}
                                 onClick={() => createProject.mutate({ value: value })}
-                                
+
                             >
-                                
+
                                 <ArrowUp size={18} />
                             </Button>
                         </div>
@@ -212,7 +218,9 @@ export default function BuilderPage() {
                         </motion.button>
                     ))}
                 </motion.div>
+                <ProjectsList />
             </motion.div>
+            
         </div>
     );
 }

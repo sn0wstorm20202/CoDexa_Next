@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getSandbox } from "@/inngest/utils";
 
 export const fragmentsRouter = createTRPCRouter({
-    updateFiles: baseProcedure
+    updateFiles: protectedProcedure
         .input(z.object({
             fragmentId: z.string().min(1, { message: "Fragment ID is required" }),
             files: z.record(z.string(), z.string()).refine(
@@ -13,11 +13,18 @@ export const fragmentsRouter = createTRPCRouter({
                 { message: "At least one file is required" }
             )
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             try {
-                // First, get the fragment to access the sandbox
+                // First, get the fragment to access the sandbox and verify ownership
                 const fragment = await prisma.fragment.findUnique({
-                    where: { id: input.fragmentId },
+                    where: {
+                        id: input.fragmentId,
+                        message: {
+                            project: {
+                                userId: ctx.auth.userId // Ensure user owns the project containing this fragment
+                            }
+                        }
+                    },
                     include: { message: true }
                 });
 
@@ -30,27 +37,27 @@ export const fragmentsRouter = createTRPCRouter({
 
                 // Extract sandbox ID from URL - E2B uses different URL formats
                 console.log("Fragment sandbox URL:", fragment.sandboxUrl);
-                
+
                 let sandboxId: string | undefined;
-                
+
                 // Pattern 1: https://{port}-{sandboxId}.e2b.app (current format)
                 const e2bAppMatch = fragment.sandboxUrl.match(/https:\/\/\d+-([a-zA-Z0-9]+)\.e2b\.app/);
                 if (e2bAppMatch) {
                     sandboxId = e2bAppMatch[1];
                 }
-                
+
                 // Pattern 2: https://{sandboxId}.e2b.dev (legacy format)
                 if (!sandboxId) {
                     sandboxId = fragment.sandboxUrl.match(/https:\/\/([^.-]+)\.e2b\.dev/)?.[1];
                 }
-                
+
                 // Pattern 3: https://{sandboxId}-3000.{host}.e2b.dev (another legacy format)
                 if (!sandboxId) {
                     sandboxId = fragment.sandboxUrl.match(/https:\/\/([^.-]+)-\d+\.[^.]+\.e2b\.dev/)?.[1];
                 }
-                
+
                 console.log("Extracted sandbox ID:", sandboxId);
-                
+
                 if (!sandboxId) {
                     console.error("Failed to extract sandbox ID from URL:", fragment.sandboxUrl);
                     throw new TRPCError({
@@ -65,7 +72,7 @@ export const fragmentsRouter = createTRPCRouter({
                     console.log("Connecting to sandbox:", sandboxId);
                     const sandbox = await getSandbox(sandboxId);
                     console.log("Sandbox connected successfully");
-                    
+
                     // Update each file in the sandbox
                     for (const [filePath, content] of Object.entries(input.files)) {
                         console.log(`Updating file in sandbox: ${filePath}`);
@@ -92,14 +99,14 @@ export const fragmentsRouter = createTRPCRouter({
                     success: true,
                     fragment: updatedFragment,
                     sandboxUpdateSuccess,
-                    message: sandboxUpdateSuccess 
+                    message: sandboxUpdateSuccess
                         ? "Files updated successfully in both database and sandbox"
                         : "Files updated in database only - sandbox update failed"
                 };
 
             } catch (error) {
                 console.error("Error updating fragment files:", error);
-                
+
                 if (error instanceof TRPCError) {
                     throw error;
                 }
@@ -111,25 +118,32 @@ export const fragmentsRouter = createTRPCRouter({
             }
         }),
 
-    updateSingleFile: baseProcedure
+    updateSingleFile: protectedProcedure
         .input(z.object({
             fragmentId: z.string().min(1, { message: "Fragment ID is required" }),
             filePath: z.string().min(1, { message: "File path is required" }),
             content: z.string()
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
             console.log('🚀 updateSingleFile - Starting update for:', {
                 fragmentId: input.fragmentId,
                 filePath: input.filePath,
                 contentLength: input.content.length,
                 timestamp: new Date().toISOString()
             });
-            
+
             try {
-                // Get current fragment
+                // Get current fragment and verify ownership
                 console.log('📋 Fetching fragment from database:', input.fragmentId);
                 const fragment = await prisma.fragment.findUnique({
-                    where: { id: input.fragmentId }
+                    where: {
+                        id: input.fragmentId,
+                        message: {
+                            project: {
+                                userId: ctx.auth.userId // Ensure user owns the project containing this fragment
+                            }
+                        }
+                    }
                 });
 
                 if (!fragment) {
@@ -139,7 +153,7 @@ export const fragmentsRouter = createTRPCRouter({
                         message: "Fragment not found"
                     });
                 }
-                
+
                 console.log('✅ Fragment found:', {
                     id: fragment.id,
                     sandboxUrl: fragment.sandboxUrl,
@@ -147,7 +161,7 @@ export const fragmentsRouter = createTRPCRouter({
                 });
 
                 // Get current files
-                const currentFiles = typeof fragment.files === 'object' && fragment.files !== null 
+                const currentFiles = typeof fragment.files === 'object' && fragment.files !== null
                     ? fragment.files as Record<string, string>
                     : {};
 
@@ -159,27 +173,27 @@ export const fragmentsRouter = createTRPCRouter({
 
                 // Extract sandbox ID and update sandbox
                 console.log("Single file update - Fragment sandbox URL:", fragment.sandboxUrl);
-                
+
                 let sandboxId: string | undefined;
-                
+
                 // Pattern 1: https://{port}-{sandboxId}.e2b.app (current format)
                 const e2bAppMatch = fragment.sandboxUrl.match(/https:\/\/\d+-([a-zA-Z0-9]+)\.e2b\.app/);
                 if (e2bAppMatch) {
                     sandboxId = e2bAppMatch[1];
                 }
-                
+
                 // Pattern 2: https://{sandboxId}.e2b.dev (legacy format)  
                 if (!sandboxId) {
                     sandboxId = fragment.sandboxUrl.match(/https:\/\/([^.-]+)\.e2b\.dev/)?.[1];
                 }
-                
+
                 // Pattern 3: https://{sandboxId}-3000.{host}.e2b.dev (another legacy format)
                 if (!sandboxId) {
                     sandboxId = fragment.sandboxUrl.match(/https:\/\/([^.-]+)-\d+\.[^.]+\.e2b\.dev/)?.[1];
                 }
-                
+
                 console.log("Extracted sandbox ID for single file:", sandboxId);
-                
+
                 let sandboxUpdateSuccess = false;
                 if (sandboxId) {
                     try {
@@ -198,7 +212,7 @@ export const fragmentsRouter = createTRPCRouter({
                 // Update database
                 console.log('💾 Updating database with new files...');
                 console.log('📁 Updated files structure:', Object.keys(updatedFiles));
-                
+
                 const updatedFragment = await prisma.fragment.update({
                     where: { id: input.fragmentId },
                     data: {
@@ -206,9 +220,9 @@ export const fragmentsRouter = createTRPCRouter({
                         updatedAt: new Date()
                     }
                 });
-                
+
                 console.log('✅ Database updated successfully');
-                
+
                 const result = {
                     success: true,
                     fragment: updatedFragment,
@@ -218,18 +232,18 @@ export const fragmentsRouter = createTRPCRouter({
                         ? `File ${input.filePath} updated successfully in both database and sandbox`
                         : `File ${input.filePath} updated in database only - sandbox update failed`
                 };
-                
+
                 console.log('🎉 updateSingleFile completed:', {
                     success: result.success,
                     sandboxUpdateSuccess,
                     message: result.message
                 });
-                
+
                 return result;
 
             } catch (error) {
                 console.error("Error updating single file:", error);
-                
+
                 if (error instanceof TRPCError) {
                     throw error;
                 }
