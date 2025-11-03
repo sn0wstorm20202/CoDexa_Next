@@ -26,6 +26,7 @@ interface Props {
 export const ProjectView = ({ projectId }: Props) => {
     const [activeFragment, setActiveFragment] = useState < Fragment | null>(null);
     const [tabState, setTabState] = useState<"preview" | "code">("preview");
+    const [selectedCodeFile, setSelectedCodeFile] = useState<string | null>(null);
 
     return (
         <div className="h-screen">
@@ -81,10 +82,10 @@ export const ProjectView = ({ projectId }: Props) => {
                         <TabsContent value="code" className="min-h-0">
                             {!!activeFragment?.files && (
                                 <FileExplorer
-                                    files={activeFragment.files as { [path: string]: string; }} selectedFile={null} onFileSelect={function (path: string): void {
-                                        throw new Error("Function not implemented.");
-                                    } }                                
-                                    />
+                                    files={activeFragment.files as { [path: string]: string; }} 
+                                    selectedFile={selectedCodeFile} 
+                                    onFileSelect={(path: string) => setSelectedCodeFile(path)}                                
+                                />
                             )}
                         </TabsContent>
                     </Tabs>

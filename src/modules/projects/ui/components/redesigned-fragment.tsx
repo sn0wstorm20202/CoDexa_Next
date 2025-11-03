@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   ExternalLinkIcon, 
   RefreshCcwIcon, 
@@ -8,7 +8,8 @@ import {
   Copy,
   Download,
   Save,
-  Loader2
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Fragment } from "generated/prisma";
 import { Button } from "@/components/ui/button";
@@ -40,8 +41,119 @@ export function RedesignedFragment({ data }: Props) {
     typeof data.files === 'object' && data.files !== null ? data.files as Record<string, string> : {}
   );
   const [savingFile, setSavingFile] = useState<string | null>(null);
+  const [healthStatus, setHealthStatus] = useState<'checking' | 'healthy' | 'restarting' | 'error'>('healthy');
+  const [healthCheckDone, setHealthCheckDone] = useState(false);
 
   const trpc = useTRPC();
+
+  // Health check function
+  const checkAndRestartSandbox = useCallback(async () => {
+    if (!data.sandboxUrl) return;
+    
+    try {
+      setHealthStatus('checking');
+      console.log('🏥 Starting sandbox health check for:', data.sandboxUrl);
+      
+      // Simple client-side health check via fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const response = await fetch(data.sandboxUrl, { 
+          signal: controller.signal,
+          mode: 'no-cors' // Allow cross-origin check
+        });
+        clearTimeout(timeoutId);
+        
+        // If we get any response (even no-cors opaque), sandbox is responding
+        console.log('✅ Sandbox health check passed');
+        setHealthStatus('healthy');
+        return;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.log('⚠️ Sandbox not responding, attempting server-side restart...');
+        
+        // Call backend to restart sandbox
+        setHealthStatus('restarting');
+        
+        const response = await fetch('/api/sandbox/health', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            sandboxUrl: data.sandboxUrl,
+            fragmentId: data.id 
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.isHealthy) {
+          console.log('✅ Sandbox restarted successfully');
+          setHealthStatus('healthy');
+          toast.success(result.wasRestarted ? 'Preview restarted successfully!' : 'Preview is ready', {
+            duration: 3000
+          });
+          
+          // Refresh iframe after restart
+          if (result.wasRestarted) {
+            setTimeout(() => {
+              setFragmentKey(prev => prev + 1);
+            }, 1000);
+          }
+        } else {
+          console.error('❌ Sandbox restart failed:', result.error);
+          setHealthStatus('error');
+          toast.error('Preview unavailable. Try refreshing manually.', {
+            duration: 5000
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Health check error:', error);
+      setHealthStatus('error');
+    }
+  }, [data.sandboxUrl, data.id]);
+
+  // Run health check when component mounts or sandbox URL changes (ONLY ONCE per fragment)
+  useEffect(() => {
+    if (data.sandboxUrl && activeTab === 'preview' && !healthCheckDone) {
+      console.log('🏥 Triggering health check for fragment:', data.id);
+      setHealthCheckDone(true); // Set BEFORE calling to prevent re-runs
+      
+      const timer = setTimeout(() => {
+        checkAndRestartSandbox();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [data.sandboxUrl, data.id, activeTab, healthCheckDone, checkAndRestartSandbox]);
+
+  // Reset health check when fragment changes
+  useEffect(() => {
+    setHealthCheckDone(false);
+    setHealthStatus('healthy');
+  }, [data.id]);
+
+  // Sync fileContents when data.files changes (e.g., when agent generates new files)
+  useEffect(() => {
+    console.log('🔄 [RedesignedFragment] data.files changed, syncing fileContents...', {
+      newFilesCount: Object.keys(data.files as object || {}).length,
+      currentFilesCount: Object.keys(fileContents).length,
+      fragmentId: data.id
+    });
+    
+    if (typeof data.files === 'object' && data.files !== null) {
+      const newFiles = data.files as Record<string, string>;
+      setFileContents(newFiles);
+      
+      // If currently selected file no longer exists, select first available file
+      if (selectedFile && !newFiles[selectedFile] && Object.keys(newFiles).length > 0) {
+        const firstFile = Object.keys(newFiles)[0];
+        console.log('🔄 Selected file no longer exists, switching to:', firstFile);
+        setSelectedFile(firstFile);
+      }
+    }
+  }, [data.files, data.id]); // Re-run when data.files or fragment ID changes
 
   const updateFileMutation = useMutation(trpc.fragments.updateSingleFile.mutationOptions({
     onSuccess: (result) => {
@@ -223,11 +335,14 @@ export function RedesignedFragment({ data }: Props) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={onRefresh}
-              disabled={!data.sandboxUrl}
+              onClick={() => {
+                setHealthCheckDone(false);
+                onRefresh();
+              }}
+              disabled={!data.sandboxUrl || healthStatus === 'restarting'}
               className="h-7 px-2"
             >
-              <RefreshCcwIcon className="h-3 w-3" />
+              <RefreshCcwIcon className={healthStatus === 'checking' ? "h-3 w-3 animate-spin" : "h-3 w-3"} />
             </Button>
           </Hint>
 
@@ -269,13 +384,42 @@ export function RedesignedFragment({ data }: Props) {
             <TabsContent value="preview" className="h-full m-0 p-3">
               <div className="h-full flex flex-col rounded-lg border overflow-hidden bg-white">
                 {data.sandboxUrl ? (
-                  <iframe
-                    key={fragmentKey}
-                    className="h-full w-full"
-                    sandbox="allow-forms allow-scripts allow-same-origin"
-                    loading="lazy"
-                    src={data.sandboxUrl}
-                  />
+                  <>
+                    {/* Health status overlay */}
+                    {(healthStatus === 'checking' || healthStatus === 'restarting') && (
+                      <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+                        <div className="text-center space-y-2">
+                          <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
+                          <p className="text-sm font-medium">
+                            {healthStatus === 'checking' ? 'Checking preview...' : 'Restarting preview...'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            This may take a few seconds
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {healthStatus === 'error' && (
+                      <div className="p-4 bg-destructive/10 border-b border-destructive/20">
+                        <div className="flex items-center gap-2 text-destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <p className="text-sm font-medium">Preview unavailable</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          The preview server is not responding. Try clicking the refresh button.
+                        </p>
+                      </div>
+                    )}
+                    
+                    <iframe
+                      key={fragmentKey}
+                      className="h-full w-full"
+                      sandbox="allow-forms allow-scripts allow-same-origin"
+                      loading="lazy"
+                      src={data.sandboxUrl}
+                    />
+                  </>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     <div className="text-center">
