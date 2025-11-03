@@ -1,1 +1,1 @@
-export const SANDBOX_TIMEOUt = 60_000 * 10 * 3;
+export const SANDBOX_TIMEOUt = 3_600_000;   // 1 hour in milliseconds
