@@ -5,17 +5,20 @@ import {
   createTool,
   createNetwork,
   gemini,
-  openai
+  openai,
+  type Message,
+  type Tool,
+  createState,
 } from "@inngest/agent-kit";
 import dotenv from "dotenv";
 dotenv.config();
 
 
-import { PROMPT } from "@/prompt";
+import { PROMPT, RESPONSE_PROMPT, FRAGMENT_TITLE_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
 
 import { inngest } from "./client";
-import { getSandbox, lastAssistantTextMessageContent } from "./utils";
+import { getSandbox, lastAssistantTextMessageContent, parseAgentOutput } from "./utils";
 import { SANDBOX_TIMEOUt } from "./type";
 import {
   getConversationMemory,
@@ -29,6 +32,9 @@ interface AgentState {
   files: { [path: string]: string };
 };
 
+
+
+
 export const codeAgentFunction = inngest.createFunction(
   { id: "code-agent" },
   { event: "code-agent/run" },
@@ -41,6 +47,9 @@ export const codeAgentFunction = inngest.createFunction(
       userMessageLength: userMessage?.length || 0,
       userMessagePreview: userMessage?.substring(0, 100) + (userMessage?.length > 100 ? '...' : '')
     });
+
+
+
 
     // Retrieve conversation memory
     const memory = await step.run("get-memory", async () => {
@@ -78,23 +87,23 @@ export const codeAgentFunction = inngest.createFunction(
       }
     });
 
-    // Generate enhanced prompt with context
-    const enhancedPrompt = await step.run("generate-prompt", async () => {
-      console.log('📝 [AGENT] Generating enhanced prompt...');
-      try {
-        const result = generateContextualPrompt(PROMPT, memory, userMessage);
-        console.log('📝 [AGENT] Enhanced prompt generated:', {
-          originalPromptLength: PROMPT.length,
-          enhancedPromptLength: result.length,
-          hasContext: result !== PROMPT,
-          contextAddedLength: result.length - PROMPT.length
-        });
-        return result;
-      } catch (error) {
-        console.error('❌ [AGENT] Error generating prompt:', error);
-        return PROMPT; // Fallback to original prompt
-      }
-    });
+    // // Generate enhanced prompt with context
+    // const enhancedPrompt = await step.run("generate-prompt", async () => {
+    //   console.log('📝 [AGENT] Generating enhanced prompt...');
+    //   try {
+    //     const result = generateContextualPrompt(PROMPT, memory, userMessage);
+    //     console.log('📝 [AGENT] Enhanced prompt generated:', {
+    //       originalPromptLength: PROMPT.length,
+    //       enhancedPromptLength: result.length,
+    //       hasContext: result !== PROMPT,
+    //       contextAddedLength: result.length - PROMPT.length
+    //     });
+    //     return result;
+    //   } catch (error) {
+    //     console.error('❌ [AGENT] Error generating prompt:', error);
+    //     return PROMPT; // Fallback to original prompt
+    //   }
+    // });
 
     // Update memory with user message
     await step.run("update-memory-user", async () => {
@@ -123,14 +132,48 @@ export const codeAgentFunction = inngest.createFunction(
       return sandbox.sandboxId;
     });
 
+    const previousMessages = await step.run("get-previous-messages", async () => {
+      const formattedMessages: Message[] = [];
+
+      const messages = await prisma.message.findMany({
+        where: {
+          projectId: projectId,
+        },
+        orderBy: {
+          createdAt: "desc", //TODO change to dsdc if ai does not understand
+        },
+      });
+
+      for (const message of messages) {
+        formattedMessages.push({
+          type: "text",
+          role: message.role === "ASSISTANT" ? "assistant" : "user",
+          content: message.content,
+        })
+      }
+      return formattedMessages;
+
+    });
+
+    const state = createState<AgentState>(
+      {
+        summary: "",
+        files: {},
+      },
+      {
+        messages: previousMessages,
+      },
+    );
+
     const codeAgent = createAgent<AgentState>({
       name: "code-agent",
       description:
         "An expert coding agent that can write code, run terminal commands, and summarize content.",
-      system: enhancedPrompt,
-      model: gemini({
-        apiKey: process.env.GEMINI_API_KEY,
-        model: "gemini-2.5-flash"
+      system: PROMPT,
+      model: openai({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: "gpt-5-mini",
+        //defaultParameters: { temperature: 0.1 },
 
       }),
       // ✅ Fixed type name
@@ -241,6 +284,7 @@ export const codeAgentFunction = inngest.createFunction(
       name: "code-agent-network",
       agents: [codeAgent],
       maxIter: 15,
+      defaultState: state,
       router: async ({ network }) => {
         const summary = network.state.data.summary;
         if (summary) {
@@ -250,7 +294,32 @@ export const codeAgentFunction = inngest.createFunction(
       },
     });
 
-    const result = await network.run(event.data.value);
+    const result = await network.run(event.data.value, { state });
+
+
+    const fragmentTitleGenerator = createAgent({
+      name: "fragment-title-generator",
+      description: "A fragment title generator",
+      system: FRAGMENT_TITLE_PROMPT,
+      model: openai({
+        model: "gpt-5-nano",
+      }),
+    })
+
+    const responseGenerator = createAgent({
+      name: "response-generator",
+      description: "A response generator",
+      system: RESPONSE_PROMPT,
+      model: openai({
+        model: "gpt-5-nano",
+      }),
+    })
+
+    const { output: fragmentTitleOuput } = await fragmentTitleGenerator.run(result.state.data.summary);
+    const { output: responseOutput } = await responseGenerator.run(result.state.data.summary);
+
+
+    
 
     const isError =
       !result.state.data.summary ||
@@ -277,13 +346,13 @@ export const codeAgentFunction = inngest.createFunction(
       return prisma.message.create({
         data: {
           projectId: event.data.projectID, // Associate with project
-          content: result.state.data.summary,
+          content: parseAgentOutput(responseOutput),
           role: "ASSISTANT",
           type: "RESULT",
           fragment: {
             create: {
               sandboxUrl: sandboxUrl,
-              title: "Fragment",
+              title: parseAgentOutput(fragmentTitleOuput),
               files: result.state.data.files,
             },
           },
