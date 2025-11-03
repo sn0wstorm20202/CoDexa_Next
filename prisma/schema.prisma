@@ -55,6 +55,14 @@ model Fragment {
   sandboxUrl String
   title      String
   files      Json
+  
+  // Full-stack architecture support
+  architecture String @default("frontend") // "frontend" | "fullstack"
+  backendUrl   String? // Backend API URL if full-stack
+  dbType       String? // "sqlite" | "postgres" | null
+  dbSchema     Json?   // Prisma schema as JSON
+  seedData     Json?   // Initial seed data
+  
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

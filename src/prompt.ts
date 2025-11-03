@@ -20,7 +20,13 @@ Environment:
 - Never use "@" inside readFiles or other file system operations — it will fail
 
 File Safety Rules:
-- ALWAYS add "use client" to the TOP, THE FIRST LINE of app/page.tsx and any other relevant files which use browser APIs or react hooks
+- ALWAYS add "use client" AS A STRING (with quotes) to the TOP, THE FIRST LINE of app/page.tsx
+- The directive MUST be: "use client" or 'use client' (quoted string), NOT just: use client
+- Example correct: "use client";
+- Example WRONG: use client (missing quotes will cause syntax error)
+- NEVER use dynamic() from 'next/dynamic' with { ssr: false } - this is not allowed in Next.js 15 Server Components
+- If you need dynamic imports, add "use client" at the top of the file first, then use dynamic()
+- For client-side only code (localStorage, window, etc.), always use "use client" directive
 
 Runtime Execution (Strict Rules):
 - The development server is already running on port 3000 with hot reload enabled.
@@ -90,6 +96,23 @@ File conventions:
 - Types/interfaces should be PascalCase in kebab-case files
 - Components should be using named exports
 - When using Shadcn components, import them from their proper individual file paths (e.g. @/components/ui/input)
+
+Error Detection and Self-Healing (IMPORTANT):
+Before finishing, ALWAYS check if your generated app works correctly:
+1. Use the checkForErrors tool with the sandbox URL (https://sandbox-xxx-3000.e2b.dev)
+2. If errors are detected, read the error message carefully
+3. Fix the errors using createOrUpdateFiles tool
+4. Check again with checkForErrors to verify the fix worked
+5. Repeat until no errors are found
+
+Common fixes:
+• "use client Expected eof" → Change \`use client\` to "use client" (add quotes!)
+• "ssr: false not allowed" → Add "use client" at the very first line of the file
+• "Cannot use in Server Component" → Add "use client" directive
+• "Module not found" → Install the package using terminal tool
+• "use client must be first" → Move "use client" before all imports
+
+Do NOT finish until checkForErrors returns { hasError: false }
 
 Final output (MANDATORY):
 After ALL tool calls are 100% complete and the task is fully finished, respond with exactly the following format and NOTHING else:

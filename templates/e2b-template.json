@@ -1,0 +1,44 @@
+{
+  "name": "codexa-fullstack",
+  "version": "2.0.0",
+  "description": "CoDexa full-stack template with React frontend, Express backend, and database support",
+  "base": "ubuntu22.04",
+  "packages": [
+    "nodejs-20",
+    "npm",
+    "sqlite3",
+    "postgresql-15"
+  ],
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "3000",
+    "BACKEND_PORT": "8000"
+  },
+  "ports": [
+    {
+      "port": 3000,
+      "protocol": "http",
+      "description": "Frontend Vite dev server"
+    },
+    {
+      "port": 8000,
+      "protocol": "http",
+      "description": "Backend Express API server"
+    },
+    {
+      "port": 5432,
+      "protocol": "tcp",
+      "description": "PostgreSQL database (optional)"
+    }
+  ],
+  "startup": {
+    "script": "/home/user/startup.sh",
+    "timeout": 60
+  },
+  "health_check": {
+    "endpoint": "http://localhost:3000",
+    "interval": 10,
+    "timeout": 5,
+    "retries": 3
+  }
+}

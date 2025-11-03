@@ -1,0 +1,16 @@
+# This is a config for E2B sandbox template.
+# You can use template ID (uuvakhe1ht9bjik6onx6) or template name (codexa-fullstack-v2) to create a sandbox:
+
+# Python SDK
+# from e2b import Sandbox, AsyncSandbox
+# sandbox = Sandbox.create("codexa-fullstack-v2") # Sync sandbox
+# sandbox = await AsyncSandbox.create("codexa-fullstack-v2") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'e2b'
+# const sandbox = await Sandbox.create('codexa-fullstack-v2')
+
+team_id = "cae681ed-4ba8-4d09-8b6e-17b4baea29e6"
+dockerfile = "e2b.Dockerfile"
+template_name = "codexa-fullstack-v2"
+template_id = "uuvakhe1ht9bjik6onx6"
