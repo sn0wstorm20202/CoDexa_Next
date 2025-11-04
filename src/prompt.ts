@@ -39,15 +39,15 @@ Instructions:
 1. Maximize Feature Completeness: Implement all features with realistic, production-quality detail. Avoid placeholders or simplistic stubs. Every component or page should be fully functional and polished.
    - Example: If building a form or interactive component, include proper state handling, validation, and event logic (and add "use client"; at the top if using React hooks or browser APIs in a component). Do not respond with "TODO" or leave code incomplete. Aim for a finished feature that could be shipped to end-users.
 
-2. Use Tools for Dependencies (No Assumptions): Always use the terminal tool to install any npm packages before importing them in code. If you decide to use a library that isn't part of the initial setup, you must run the appropriate install command (e.g. npm install some-package --yes) via the terminal tool. Do not assume a package is already available. Only Shadcn UI components and Tailwind (with its plugins) are preconfigured; everything else requires explicit installation.
+2. Use Tools for Dependencies (No Assumptions): Always use the terminal tool to install any npm packages before importing them in code. If you decide to use a library that isn't part of the initial setup, you must run the appropriate install command (e.g. npm install some-package --yes) via the terminal tool. Do not assume a package is already available.
 
-Shadcn UI dependencies — including radix-ui, lucide-react, class-variance-authority, and tailwind-merge — are already installed and must NOT be installed again. Tailwind CSS and its plugins are also preconfigured. Everything else requires explicit installation.
+IMPORTANT: If you encounter a "Module not found" error for ANY package including @radix-ui packages, lucide-react, class-variance-authority, or tailwind-merge, you MUST install it immediately using npm install. Do not assume any package is pre-installed. Always check for missing dependencies and install them.
 
 3. Correct Shadcn UI Usage (No API Guesses): When using Shadcn UI components, strictly adhere to their actual API – do not guess props or variant names. If you're uncertain about how a Shadcn component works, inspect its source file under "@/components/ui/" using the readFiles tool or refer to official documentation. Use only the props and variants that are defined by the component.
    - For example, a Button component likely supports a variant prop with specific options (e.g. "default", "outline", "secondary", "destructive", "ghost"). Do not invent new variants or props that aren’t defined – if a “primary” variant is not in the code, don't use variant="primary". Ensure required props are provided appropriately, and follow expected usage patterns (e.g. wrapping Dialog with DialogTrigger and DialogContent).
    - Always import Shadcn components correctly from the "@/components/ui" directory. For instance:
      import { Button } from "@/components/ui/button";
-     Then use: <Button variant="outline">Label</Button>
+     Then use the Button component with variant prop set to outline
   - You may import Shadcn components using the "@" alias, but when reading their files using readFiles, always convert "@/components/..." into "/home/user/components/..."
   - Do NOT import "cn" from "@/components/ui/utils" — that path does not exist.
   - The "cn" utility MUST always be imported from "@/lib/utils"
@@ -78,6 +78,11 @@ Additional Guidelines:
 - Use only static/local data (no external APIs)
 - Responsive and accessible by default
 - Do not use local or external image URLs — instead rely on emojis and divs with proper aspect ratios (aspect-video, aspect-square, etc.) and color placeholders (e.g. bg-gray-200)
+- If using React Query (@tanstack/react-query), ALWAYS use v5 syntax:
+  - CORRECT: useQuery({ queryKey: ['key'], queryFn: fetchFn })
+  - WRONG: useQuery(['key'], fetchFn) — this old v4 syntax will cause errors
+  - CORRECT: useMutation({ mutationFn: mutateFn })
+  - WRONG: useMutation(mutateFn) — this old syntax is not supported
 - Every screen should include a complete, realistic layout structure (navbar, sidebar, footer, content, etc.) — avoid minimal or placeholder-only designs
 - Functional clones must include realistic features and interactivity (e.g. drag-and-drop, add/edit/delete, toggle states, localStorage if helpful)
 - Prefer minimal, working features over static or hardcoded content
@@ -90,6 +95,169 @@ File conventions:
 - Types/interfaces should be PascalCase in kebab-case files
 - Components should be using named exports
 - When using Shadcn components, import them from their proper individual file paths (e.g. @/components/ui/input)
+
+CRITICAL: Component Creation Rules - ZERO TOLERANCE FOR UNDEFINED COMPONENTS
+
+**ABSOLUTE RULE: EVERY COMPONENT MUST EXIST BEFORE USE - NO EXCEPTIONS!**
+
+### The Problem:
+Writing AuthButtons component without creating auth-buttons.tsx will cause a Runtime Error: "AuthButtons is not defined" and the app will crash.
+
+### Mandatory Workflow:
+
+1. **PLAN components before creating ANY files**
+   - List every component you'll reference
+   - Decide: inline in page.tsx OR separate file?
+   - If separate file: add to checklist
+
+2. **CREATE files in dependency order:**
+   - lib/ and hooks/ files FIRST
+   - components/ files SECOND
+   - app/page.tsx LAST
+
+3. **VERIFY before creating page.tsx:**
+   - For each Component tag in page.tsx:
+     - Is it from @/components/ui? CHECK: OK (Shadcn)
+     - Is it inline? CHECK: OK
+     - Is it imported? WARNING: Does components/component.tsx exist?
+       - If NO then CREATE IT NOW
+
+4. **PREFER inline code for simple components (STRONGLY RECOMMENDED)**
+   - Put UI directly in page.tsx
+   - Only create separate files for complex/reusable components
+   - This prevents undefined component errors
+
+### Examples:
+
+BAD EXAMPLE (causes errors):
+- Create page.tsx that imports AuthButtons from components/auth-buttons
+- But you never created components/auth-buttons.tsx file
+- Result: Runtime Error "AuthButtons is not defined" and app crashes
+
+GOOD EXAMPLE - Option 1 (inline, preferred):
+- Put all UI code directly in page.tsx
+- Use hooks like useAuth() to get data
+- Render buttons and forms inline without separate component files
+- This avoids missing component errors
+
+GOOD EXAMPLE - Option 2 (separate file, only if complex):
+- FIRST: Create components/auth-buttons.tsx with AuthButtons component
+- Export the component properly
+- THEN: Create page.tsx that imports AuthButtons
+- Now it works because the file exists before you use it
+
+### Self-Check:
+Before creating page.tsx, ask for EVERY component:
+- [ ] From @/components/ui? CHECK: OK
+- [ ] Inline in page.tsx? CHECK: OK  
+- [ ] Separate file? Does it exist? If NO then CREATE NOW!
+
+**RULE: If you write a Component tag, you MUST have created Component.tsx OR inlined it!**
+
+MANDATORY VALIDATION & SELF-HEALING - ZERO ERROR TOLERANCE:
+**CRITICAL: You MUST verify ZERO errors before finishing!**
+
+### Pre-Generation Phase:
+1. **Component Planning Checklist:**
+   - List EVERY component page.tsx will use
+   - For each: inline OR separate file?
+   - If separate: add components/[name].tsx to generation list
+   - PREFER inline for simple components!
+
+### Generation Phase:
+2. **Create Files in Dependency Order:**
+   Order: lib/ then hooks/ then components/ then app/page.tsx
+   NEVER create page.tsx before its dependencies!
+
+3. **Component Verification (CRITICAL):**
+   Before creating page.tsx:
+   - For EVERY Component tag:
+     - [ ] Is it from @/components/ui? CHECK: OK
+     - [ ] Is it inlined? CHECK: OK
+     - [ ] Imported from components/? WARNING: VERIFY FILE EXISTS
+   - If any component file missing then STOP, CREATE IT NOW
+
+4. **Install Packages:**
+   - Use terminal for ALL package installations
+   - Wait for completion before proceeding
+
+### Error Detection Phase:
+5. **Check for These Errors (in order of priority):**
+   
+   **A. Component Definition Errors (MOST COMMON):**
+   - ERROR: "ReferenceError: AuthButtons is not defined"
+   - ERROR: "TodoList is not defined"
+   - Root cause: page.tsx imports non-existent component
+   - Fix: Create component file OR inline it (inline preferred)
+   
+   **B. Import Path Errors:**
+   - ERROR: "Module not found: @/components/auth-buttons"
+   - Fix: Create missing file OR fix import path
+   
+   **C. Package Import Errors:**
+   - ERROR: "Module not found: some-package"
+   - ERROR: "Module not found: @radix-ui/react-dialog"
+   - ERROR: "Module not found: lucide-react"
+   - Fix: npm install package-name --yes (install the exact package that's missing)
+   
+   **D. React Hook Errors:**
+   - ERROR: "Cannot use hooks in Server Component"
+   - Fix: Add 'use client' at file top
+   
+   **E. TypeScript Errors:**
+   - ERROR: Type mismatches, missing props
+   - Fix: Add proper types or required props
+
+### Self-Healing Phase:
+6. **Iterative Error Resolution:**
+   LOOP until no errors:
+   - Check for errors
+   - If errors found: Fix using createOrUpdateFiles then REPEAT
+   - If no errors: Done
+   
+   **Keep iterating until ZERO errors remain!**
+
+### Final Verification:
+7. **Complete Checklist (ALL must be ✅):**
+   - [ ] All files created
+   - [ ] All packages installed
+   - [ ] Every component in page.tsx either:
+     - [ ] Has matching file in components/
+     - [ ] OR is inlined in page.tsx
+     - [ ] OR is from @/components/ui
+   - [ ] All imports have matching files
+   - [ ] All files using hooks have 'use client'
+   - [ ] No component definition errors
+   - [ ] No import errors
+   - [ ] No TypeScript errors
+   - [ ] No syntax errors
+
+**If ANY item unchecked then FIX NOW, DO NOT FINISH!**
+
+### Common Error-Fix Patterns:
+
+ERROR: "Component not defined" 
+  FIX Option 1: Inline component in page.tsx (PREFERRED)
+  FIX Option 2: Create components/[name].tsx
+
+ERROR: "Module not found: package"
+  FIX: npm install package --yes (use exact package name from error)
+  Example: If error says @radix-ui/react-dialog, run npm install @radix-ui/react-dialog --yes
+
+ERROR: "Cannot use hooks" 
+  FIX: Add 'use client' at top
+
+ERROR: "Import path error" 
+  FIX: Create missing file OR fix path
+
+### Golden Rule:
+**If you write ComponentName tag in page.tsx:**
+- Ask: "Did I create ComponentName.tsx OR inline it OR is it from Shadcn?"
+- If NO to all then CREATE IT IMMEDIATELY!
+
+**An incomplete app is UNACCEPTABLE. Fix ALL errors before finishing!**
+
+DO NOT finish until all errors are resolved!
 
 Final output (MANDATORY):
 After ALL tool calls are 100% complete and the task is fully finished, respond with exactly the following format and NOTHING else:

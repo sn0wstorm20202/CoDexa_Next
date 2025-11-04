@@ -21,6 +21,13 @@ model Project {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Supabase integration (user brings their own)
+  supabaseUrl        String?
+  supabaseAnonKey    String? // Public anon key (safe to expose)
+  supabaseServiceKey String? // Service role key (encrypted, never exposed to frontend)
+  supabaseProjectId  String? // Supabase project reference ID
+  supabaseEnabled    Boolean @default(false)
+
   messages Message[]
   memory   ConversationMemory?
 }
@@ -55,6 +62,14 @@ model Fragment {
   sandboxUrl String
   title      String
   files      Json
+  
+  // Multi-phase generation tracking
+  isMultiPhase      Boolean @default(false)
+  currentPhase      Int     @default(1)
+  totalPhases       Int     @default(1)
+  phaseDescription  String?
+  complexityScore   Int     @default(0)
+  
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

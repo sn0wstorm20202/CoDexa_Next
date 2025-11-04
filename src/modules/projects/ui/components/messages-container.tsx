@@ -5,6 +5,7 @@ import { MessageForm } from "./message-form";
 import { MessageCard } from "./message-card";
 import { useEffect, useRef, useState } from "react";
 import { MessageLoading } from "./message-loading";
+import { SupabaseIntegration } from "./supabase-integration";
   
 
 
@@ -91,6 +92,7 @@ export const MessagesContainer = ({
           <div ref={bottomRef} />
         </div>
       </div>
+      <SupabaseIntegration projectId={projectId} />
       <div className="relative p-3 border-t bg-muted/10">
         <div className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         <MessageForm projectId={projectId} />

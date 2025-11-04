@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { TRPCReactProvider } from "@/trpc/client"
 import { ReactQueryProvider } from '@/components/ReactQueryProvider'
 import { ClerkProvider } from "@clerk/nextjs";
+import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,16 @@ export default function RootLayout({
             <TRPCReactProvider>
                 <html lang="en" suppressHydrationWarning>
                     <body className={inter.className} suppressHydrationWarning={true}>
+                        <Script id="sanitize-body-attrs" strategy="beforeInteractive">
+                            {`
+                              try {
+                                if (typeof document !== 'undefined' && document.body) {
+                                  var attrs = ['cz-shortcut-listen','data-new-gr-c-s-check-loaded','data-gr-ext-installed','data-lt-installed'];
+                                  attrs.forEach(function(a){ document.body.removeAttribute(a); });
+                                }
+                              } catch (e) {}
+                            `}
+                        </Script>
                         <ReactQueryProvider>
                             <TooltipProvider>
                                 <ThemeProvider

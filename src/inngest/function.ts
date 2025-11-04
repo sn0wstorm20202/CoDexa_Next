@@ -15,6 +15,7 @@ dotenv.config();
 
 
 import { PROMPT, RESPONSE_PROMPT, FRAGMENT_TITLE_PROMPT } from "@/prompt";
+import { SUPABASE_PROMPT } from "@/supabase-prompt";
 import { prisma } from "@/lib/db";
 
 import { inngest } from "./client";
@@ -26,6 +27,8 @@ import {
   generateContextualPrompt,
   extractContextFromMessage
 } from "./memory";
+import { supabaseTools } from "./supabase-tools";
+import { analyzePromptComplexity, decomposeIntoPhases } from "./prompt-analyzer";
 
 interface AgentState {
   summary: string;
@@ -46,6 +49,38 @@ export const codeAgentFunction = inngest.createFunction(
       projectId,
       userMessageLength: userMessage?.length || 0,
       userMessagePreview: userMessage?.substring(0, 100) + (userMessage?.length > 100 ? '...' : '')
+    });
+
+    // Analyze prompt complexity
+    const complexityAnalysis = await step.run("analyze-complexity", async () => {
+      console.log('🔍 [AGENT] Analyzing prompt complexity...');
+      const analysis = analyzePromptComplexity(userMessage);
+      console.log('🔍 [AGENT] Complexity analysis:', {
+        isComplex: analysis.isComplex,
+        score: analysis.score,
+        recommendation: analysis.recommendation,
+        indicators: analysis.indicators
+      });
+      return analysis;
+    });
+
+    // Decompose into phases if complex
+    const phases = await step.run("decompose-phases", async () => {
+      const projectPhases = decomposeIntoPhases(userMessage, complexityAnalysis);
+      console.log('📋 [AGENT] Project phases:', {
+        totalPhases: projectPhases.length,
+        phases: projectPhases.map(p => ({ num: p.phaseNumber, title: p.title }))
+      });
+      return projectPhases;
+    });
+
+    // For multi-phase projects, use Phase 1 prompt
+    const effectivePrompt = phases.length > 1 ? phases[0].prompt : userMessage;
+    console.log('📝 [AGENT] Using prompt:', {
+      isMultiPhase: phases.length > 1,
+      currentPhase: 1,
+      totalPhases: phases.length,
+      promptPreview: effectivePrompt.substring(0, 150) + '...'
     });
 
 
@@ -125,6 +160,16 @@ export const codeAgentFunction = inngest.createFunction(
       }
     });
 
+    // Check if Supabase is connected for this project
+    const supabaseStatus = await step.run("check-supabase", async () => {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { supabaseEnabled: true },
+      });
+      console.log('🗄️ [AGENT] Supabase status:', { enabled: project?.supabaseEnabled || false });
+      return project?.supabaseEnabled || false;
+    });
+
     // 1. Spin up a new E2B sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("vibe-codexa-123-code-2");
@@ -168,11 +213,11 @@ export const codeAgentFunction = inngest.createFunction(
     const codeAgent = createAgent<AgentState>({
       name: "code-agent",
       description:
-        "An expert coding agent that can write code, run terminal commands, and summarize content.",
-      system: PROMPT,
+        "An expert coding agent that can write code, run terminal commands, and summarize content. Can build fullstack apps with Supabase when connected.",
+      system: supabaseStatus ? SUPABASE_PROMPT : PROMPT,
       model: openai({
         apiKey: process.env.OPENAI_API_KEY,
-        model: "gpt-5-mini",
+        model: "gpt-5-2025-08-07",
         //defaultParameters: { temperature: 0.1 },
 
       }),
@@ -263,6 +308,8 @@ export const codeAgentFunction = inngest.createFunction(
             });
           },
         }),
+        // Add Supabase tools if enabled
+        ...(supabaseStatus ? supabaseTools(sandboxId, projectId) : []),
       ],
       lifecycle: {
         onResponse: async ({ result, network }) => {
@@ -294,7 +341,8 @@ export const codeAgentFunction = inngest.createFunction(
       },
     });
 
-    const result = await network.run(event.data.value, { state });
+    // Use effective prompt (Phase 1 if multi-phase, original if single-phase)
+    const result = await network.run(effectivePrompt, { state });
 
 
     const fragmentTitleGenerator = createAgent({
@@ -302,7 +350,7 @@ export const codeAgentFunction = inngest.createFunction(
       description: "A fragment title generator",
       system: FRAGMENT_TITLE_PROMPT,
       model: openai({
-        model: "gpt-5-nano",
+        model: "gpt-4o-mini",
       }),
     })
 
@@ -311,7 +359,7 @@ export const codeAgentFunction = inngest.createFunction(
       description: "A response generator",
       system: RESPONSE_PROMPT,
       model: openai({
-        model: "gpt-5-nano",
+        model: "gpt-4o-mini",
       }),
     })
 
@@ -354,6 +402,12 @@ export const codeAgentFunction = inngest.createFunction(
               sandboxUrl: sandboxUrl,
               title: parseAgentOutput(fragmentTitleOuput),
               files: result.state.data.files,
+              // Multi-phase tracking
+              isMultiPhase: phases.length > 1,
+              currentPhase: 1,
+              totalPhases: phases.length,
+              phaseDescription: phases.length > 1 ? phases[0].description : null,
+              complexityScore: complexityAnalysis.score,
             },
           },
         },

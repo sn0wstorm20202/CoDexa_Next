@@ -75,3 +75,69 @@ Notes for agents
 - Sandbox health: src/inngest/sandbox-health.ts provides utilities to check if E2B sandboxes are responding and auto-restart the Next.js dev server if needed. The UI (redesigned-fragment.tsx) automatically runs health checks when displaying previews. API route at /api/sandbox/health handles server-side restart logic.
 - E2B sandboxes may stop responding after timeouts/crashes; health check system detects this and restarts the dev server automatically (1-30 seconds).
 - testsprite_tests contains Python-based UI tests; repo doesn't ship Node test runner.
+
+AI Agent System Deep Dive
+- The agent uses a multi-phase architecture detection system:
+  - Phase 1: Infrastructure (requirement-analyzer.ts determines frontend vs full-stack)
+  - Phase 2: Integration (fullstack-tools.ts for backend + DB generation)
+  - Phase 3: Self-healing (error-detection-tools.ts for runtime validation)
+- Conversation memory system (src/inngest/memory.ts):
+  - Tracks last 8 messages per project for context continuity
+  - Extracts domain-specific info (colors, components, layout) automatically
+  - Handles modification requests ("make it red", "change to dark mode") by referencing previous context
+  - Uses extractContextFromMessage() to parse user intent and isModification flag
+- Agent tools available during code generation:
+  - terminal: Execute shell commands in E2B sandbox
+  - createOrUpdateFiles: Write/update files in sandbox
+  - readFiles: Read file contents from sandbox
+  - checkForErrors: Self-healing tool that detects runtime errors and fixes them
+  - Full-stack tools (conditional): generatePrismaSchema, setupBackend, seedDatabase
+- System prompts in src/prompt.ts:
+  - PROMPT: Frontend-only system instructions (Next.js 15, Tailwind, shadcn/ui rules)
+  - FULLSTACK_PROMPT: Backend-enabled system instructions
+  - RESPONSE_PROMPT: User-friendly message generator
+  - FRAGMENT_TITLE_PROMPT: Title generator for code fragments
+- Agent enforces strict rules:
+  - Must use "use client" (quoted string) for client components
+  - Never run npm run dev/build/start (server already running with hot reload)
+  - All styling via Tailwind (no .css/.scss files)
+  - Import shadcn/ui components individually from @/components/ui/*
+  - Use relative paths for file operations (not /home/user/...)
+  - cn() utility MUST be imported from @/lib/utils (not @/components/ui/utils)
+
+Architecture Decisions
+- Fragment data model stores both frontend and backend metadata:
+  - architecture: "frontend" | "fullstack"
+  - backendUrl: Backend API URL (port 8000) if full-stack
+  - dbType: "sqlite" | "postgres" | null
+  - dbSchema: Prisma schema as JSON
+  - files: All generated code as JSON object
+- Module structure follows domain-driven design:
+  - Each module has server/procedures.ts (tRPC) + ui/components/ + ui/views/
+  - Keeps related functionality co-located
+  - Easy to add new modules by following the pattern
+- tRPC procedures patterns:
+  - Use protectedProcedure for auth-required endpoints
+  - Always validate inputs with Zod schemas
+  - Return minimal data (select only needed fields)
+  - Handle errors with TRPCError for proper status codes
+
+Common Development Tasks
+- Adding a new tRPC procedure:
+  1. Add to appropriate router in src/modules/*/server/procedures.ts
+  2. Define Zod schema for input validation
+  3. Use protectedProcedure if auth required
+  4. Import router in src/trpc/routers/_app.ts if new module
+- Modifying agent behavior:
+  1. Edit system prompts in src/prompt.ts for instruction changes
+  2. Add tools in src/inngest/function.ts for new capabilities
+  3. Adjust requirement-analyzer.ts for architecture detection logic
+- Adding shadcn/ui components:
+  1. All components pre-installed in src/components/ui/
+  2. Import individually: import { Button } from "@/components/ui/button"
+  3. Use cn() from @/lib/utils for conditional classes
+- Debugging agent runs:
+  1. Check agent logs with emoji prefixes (🚀 start, 🧠 memory, 🔍 analysis, ❌ error, ✅ success)
+  2. Inspect Fragment.files in database for generated code
+  3. Check ConversationMemory for context tracking
+  4. Review sandbox URLs (port 3000=frontend, 8000=backend)
